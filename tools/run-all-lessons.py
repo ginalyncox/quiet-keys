@@ -11,6 +11,7 @@ PRESS = """
   if (S.busy) return 'busy';
   if (S.view === 'find' || S.view === 'read') { const el = document.querySelector('.key[data-key="'+S.target.key+'"][data-oct="'+S.target.oct+'"]'); el.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true})); return 'find'; }
   if (S.view === 'echo') { const n = S.seq[S.pos]; document.querySelector('.oct.on .key[data-key="'+n.key+'"]').dispatchEvent(new PointerEvent('pointerdown', {bubbles:true})); return 'echo'; }
+  if (S.view === 'duet' && S.lineDone) { document.querySelector('[data-act="d-next"]').click(); return 'next'; }
   if (S.view === 'song' && S.lineDone) { document.querySelector('[data-act="next-line"]').click(); return 'next'; }
   if (S.view === 'song' && S.song.any) { document.querySelector('.oct.on .key.white').dispatchEvent(new PointerEvent('pointerdown', {bubbles:true})); return 'any'; }
   return S.view;
