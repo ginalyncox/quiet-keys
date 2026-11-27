@@ -949,7 +949,7 @@ p{margin:0}
         S.demoAt = i; render();
         steps[i].notes.forEach(function(x){
           tone(midiOf(x.n), Math.max(0.6, x.b * bt + 0.4), x.hand === "l" ? 0.3 : 0.45);
-          flash(x.n.key, x.n.oct, Math.min(x.b, steps[i].len) * bt * 1000 * 0.8);
+          flash(x.n.key, x.n.oct, x.b * bt * 1000 * 0.9); // a held note stays lit for its own length
         });
         if(!await wait(steps[i].len * bt * 1000, id)) return;
       }
@@ -994,10 +994,15 @@ p{margin:0}
     }
     return [];
   }
-  function holds(){
+  function holds(){ // chord keys the left hand is holding in both-hands songs
     if(!isBoth()) return [];
     var ch = (S.busy || S.timing) ? S.chordNow : chordAt(curLine(), S.pos);
     return ch ? CH[ch].n.map(function(n){ return n.key; }) : [];
+  }
+  function heldNotes(){ // two-hand pieces: earlier notes that are still sounding at the current step
+    if(S.view !== "duet" || S.busy || S.lineDone) return [];
+    var ln = dLine(), now = ln.steps[S.pos].t;
+    return ln.r.concat(ln.l).filter(function(x){ return !x.rest && x.step < S.pos && x.t + x.b > now; });
   }
   function need(){
     var out = targets().map(function(t){ return t.oct; });
@@ -1056,7 +1061,7 @@ p{margin:0}
   /* Two staves joined at the left: right hand on top (treble), left hand below (bass), lined up in time */
   function grandStaff(ln, stateOf){
     var U = ln.quick ? 46 : 34, W = Math.max(210, 70 + ln.total * U + 14), H = 236;
-    function row(v){ return v.filter(function(x){ return !x.rest; }).map(function(x){ return {n:x.n, b:x.b, x:74 + x.t * U, st:stateOf(x.step)}; }); }
+    function row(v){ return v.filter(function(x){ return !x.rest; }).map(function(x){ return {n:x.n, b:x.b, x:74 + x.t * U, st:stateOf(x)}; }); }
     return '<div class="staffbox"><svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="two staves, right hand above left hand">' +
       staffRow("treble", row(ln.r), W, 40) + staffRow("bass", row(ln.l), W, 150) +
       '<line x1="4" x2="4" y1="40" y2="190" stroke="' + INK + '" stroke-width="2.4"/></svg></div>';
@@ -1211,17 +1216,22 @@ p{margin:0}
 
     else if(S.view === "duet"){
       var ln = dLine(), piece = S.piece, U = ln.quick ? 64 : 40, cur = S.busy ? S.demoAt : (S.lineDone ? -1 : S.pos);
-      var stOf = function(i){ return S.lineDone ? "done" : i === cur ? "now" : (i < cur ? "done" : ""); };
+      var curT = cur >= 0 ? ln.steps[cur].t : -1;
+      var stX = function(x){ // a held note stays current until its own length runs out
+        if(S.lineDone) return "done";
+        if(cur < 0 || x.step > cur) return "";
+        return (x.step === cur || x.t + x.b > curT) ? "now" : "done";
+      };
       h += dots(piece.lines.length, S.line + (S.lineDone ? 1 : 0));
       h += '<h2>' + piece.name + '</h2>';
       if(S.L && S.L.tip && S.line === 0 && S.pos === 0 && !S.busy && !S.lineDone) h += '<p class="muted">' + S.L.tip + '</p>';
-      if(save.staff) h += grandStaff(ln, stOf);
+      if(save.staff) h += grandStaff(ln, stX);
       h += '<div class="duet"><div class="duet-in" style="width:' + (ln.total * U + 4) + 'px">';
       [["Right hand", ln.r], ["Left hand", ln.l]].forEach(function(v){
         h += '<div class="hand">' + v[0] + '</div><div class="lane">';
         v[1].forEach(function(x){
           if(x.rest) return;
-          h += '<span class="chip ' + stOf(x.step) + (x.n.oct > 0 ? ' hi' : x.n.oct < 0 ? ' lo' : '') + '" style="--nc:var(--note-' + x.n.letter + ');left:' + (x.t * U) + 'px;width:' + (x.b * U - 4) + 'px">' + show(x.n.name) + '</span>';
+          h += '<span class="chip ' + stX(x) + (x.n.oct > 0 ? ' hi' : x.n.oct < 0 ? ' lo' : '') + '" style="--nc:var(--note-' + x.n.letter + ');left:' + (x.t * U) + 'px;width:' + (x.b * U - 4) + 'px">' + show(x.n.name) + '</span>';
         });
         h += '</div>';
       });
@@ -1229,7 +1239,7 @@ p{margin:0}
       if(!S.lineDone && !S.busy){
         var stp = ln.steps[S.pos];
         h += '<div class="ask">' + (stp.notes.length > 1 ? "Together" : (stp.notes[0].hand === "r" ? "Right" : "Left")) + ' ' + stp.notes.map(function(x){ return big(x.n); }).join(" ") + '</div>';
-        h += '<p class="muted">A bar on top of a block means the higher keys. A bar underneath means the lower keys.</p>';
+        h += '<p class="muted">' + (heldNotes().length ? "Keep holding the steady colored key while you play the glowing one. " : "") + 'A bar on top of a block means the higher keys. A bar underneath means the lower keys.</p>';
       }
       h += '<p class="msg">' + (S.msg || "") + '</p>';
       h += '<div class="actions">';
@@ -1267,12 +1277,12 @@ p{margin:0}
     stage.innerHTML = h;
 
     placeWindow(need(), free);
-    var t = targets(), hd = holds();
+    var t = targets(), hd = holds(), held = heldNotes();
     OCTS.forEach(function(o){
       Object.keys(keyEls[o]).forEach(function(k){
         var el = keyEls[o][k];
         el.classList.toggle("target", t.some(function(x){ return x.key === k && Math.max(-1, Math.min(1, x.oct)) === o; }));
-        el.classList.toggle("hold", o === -1 && hd.indexOf(k) !== -1);
+        el.classList.toggle("hold", (o === -1 && hd.indexOf(k) !== -1) || held.some(function(x){ return x.n.key === k && x.n.oct === o; }));
       });
     });
     piano.classList.toggle("hide-labels", S.view === "find");
