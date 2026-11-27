@@ -779,13 +779,18 @@ p{margin:0}
     render();
   }
   function timedPress(ev){
+    // A tap belongs to the block whose start is nearest, and only inside that block's own
+    // window: never more than halfway to the neighbouring block, so quick notes do not steal taps.
     var L = curLine(), now = performance.now(), best = -1, gap = 1e9;
     for(var i = 0; i < L.length; i++){
-      if(S.marks[i]) continue;
       var d = Math.abs(now - S.expect[i]);
       if(d < gap){ gap = d; best = i; }
     }
-    if(best < 0 || gap > S.win) return;
+    if(best < 0 || S.marks[best]) return;
+    var limit = S.win, off = now - S.expect[best];
+    if(off < 0 && best > 0) limit = Math.min(limit, (S.expect[best] - S.expect[best - 1]) / 2);
+    if(off > 0 && best < L.length - 1) limit = Math.min(limit, (S.expect[best + 1] - S.expect[best]) / 2);
+    if(gap > limit) return;
     var n = L[best].n, shift = songShift(), want = midiOf(n, shift);
     if(!S.song.any && ev.midi !== want){
       if(isBoth() && ev.midi < want && (ev.oct < n.oct + shift || holds().indexOf(ev.key) !== -1)) return;
