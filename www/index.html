@@ -510,6 +510,7 @@ p{margin:0}
   }
   function keyName(ev){ return ev.key.length > 1 ? say(ev.key) : ev.key; }
   function oops(ev){ return "That one is " + keyName(ev) + "."; }
+  function offBy(ev, want){ return "That is " + keyName(ev) + ", but too " + (ev.midi < want ? "low" : "high") + "."; }
 
   function songShift(){ return (S.song && save.hands === "left" && S.song.lo >= 0) ? -1 : 0; }
   function isBoth(){ return S.view === "song" && save.hands === "both" && !S.song.scale; }
@@ -637,13 +638,18 @@ p{margin:0}
     render();
   }
   function readPress(ev){
-    if(ev.key === S.target.key){
+    var want = midiOf(S.target);
+    if(ev.midi === want){
       S.reveal = true; S.msg = "Yes. That note is " + say(S.target.name) + "."; S.round++; S.busy = true; render();
       later(1000, function(){
         if(S.round >= S.total){ finish(); return; }
         S.target = pick(S.pool, S.target); S.reveal = false; S.msg = ""; S.busy = false; render();
       });
-    } else { S.reveal = true; S.msg = oops(ev) + " This note is " + say(S.target.name) + ". Tap the glowing key."; render(); }
+    } else {
+      S.reveal = true;
+      S.msg = (ev.key === S.target.key ? offBy(ev, want) : oops(ev) + " This note is " + say(S.target.name) + ".") + " Tap the glowing key.";
+      render();
+    }
   }
 
   /* ---- songs and scales ---- */
@@ -659,14 +665,14 @@ p{margin:0}
     if(S.lineDone) return;
     var n = curLine()[S.pos].n, shift = songShift(), both = isBoth();
     var want = midiOf(n, shift);
-    var ok = ev.key === n.key && (!both || ev.midi === want);
-    if(ok){
+    if(ev.midi === want){
       S.pos++; S.msg = "";
       if(S.pos >= curLine().length){ S.lineDone = true; S.msg = "You played the whole line."; }
       render();
     } else {
-      if(both && ev.midi < want) return;       // lower keys belong to the left hand's chord
-      S.msg = oops(ev) + " Look for the glowing key."; render();
+      // In both-hands mode the left hand is busy with its chord: stay quiet about those keys only.
+      if(both && ev.midi < want && (ev.oct < n.oct + shift || holds().indexOf(ev.key) !== -1)) return;
+      S.msg = (ev.key === n.key ? offBy(ev, want) : oops(ev)) + " Look for the glowing key."; render();
     }
   }
   function hearLine(){
@@ -764,7 +770,12 @@ p{margin:0}
         var mid = clef === "treble" ? 6 : -6, up = st < mid;
         var sx = up ? cx + 5.8 : cx - 5.8, sy = up ? cy - 30 : cy + 30;
         h += '<line x1="' + sx + '" x2="' + sx + '" y1="' + cy + '" y2="' + sy + '" stroke="' + col + '" stroke-width="1.4"/>';
-        if(it.b <= 0.5) h += '<path d="M' + sx + ' ' + sy + (up ? ' q9 7 6 17' : ' q9 -7 6 -17') + '" fill="none" stroke="' + col + '" stroke-width="1.6"/>';
+        var dotted = it.b === 0.75 || it.b === 1.5 || it.b === 3, plain = dotted ? it.b / 1.5 : it.b;
+        var flags = plain <= 0.25 ? 2 : plain <= 0.5 ? 1 : 0;
+        for(var fl = 0; fl < flags; fl++){
+          var fy = up ? sy + fl * 7 : sy - fl * 7;
+          h += '<path d="M' + sx + ' ' + fy + (up ? ' q9 7 6 17' : ' q9 -7 6 -17') + '" fill="none" stroke="' + col + '" stroke-width="1.6"/>';
+        }
       }
       if(it.b === 1.5 || it.b === 3 || it.b === 0.75) h += '<circle cx="' + (cx + 11) + '" cy="' + (cy - (st % 2 === 0 ? 3 : 0)) + '" r="1.8" fill="' + col + '"/>';
       if(it.n.acc) h += '<text x="' + (cx - 17) + '" y="' + (cy + 5) + '" font-size="15" fill="' + col + '" text-anchor="middle">' + (it.n.acc === "#" ? "♯" : "♭") + '</text>';
