@@ -81,6 +81,16 @@ p{margin:0}
 .cw{display:inline-flex;flex-direction:column;gap:4px;padding-top:26px;position:relative}
 .tag{position:absolute;top:0;left:0;height:22px;min-width:22px;padding:0 4px;border:2px solid var(--ivory);border-radius:5px;font-size:13px;line-height:18px;font-weight:700;text-align:center;color:var(--ivory);white-space:nowrap}
 
+/* Two hands: one lane of blocks per hand, lined up in time */
+.duet{overflow-x:auto;padding:6px 6px 8px}
+.duet-in{position:relative}
+.hand{font-size:13px;font-weight:700;color:var(--muted);line-height:18px}
+.lane{position:relative;height:40px;margin-bottom:4px}
+.lane .chip{position:absolute;top:0}
+#piano.tight .label{width:20px;height:20px;font-size:12px}
+#piano.tight .key.white{padding-bottom:6px}
+#piano.tight .groups span{font-size:10px}
+
 /* Sheet music is ink on ivory paper */
 .staffbox{background:var(--ivory);border-radius:12px;padding:4px 6px;overflow-x:auto;flex:none;line-height:0}
 .staffbox.solo{align-self:flex-start}
@@ -339,11 +349,70 @@ p{margin:0}
   mkRhythm("Quick taps", ["G G:.5 G:.5 G G:2", "G:.5 G:.5 G:.5 G:.5 G G", "G G:.5 G:.5 G:.5 G:.5 G:2"]);
   mkRhythm("Held notes", ["G:4 G:2 G:2", "G:3 G G:4", "G:1.5 G:.5 G:1.5 G:.5 G:2 G:2"]);
 
+  /* ================= two-hand pieces: each hand has its own line; "R:2" is a rest ================= */
+  function voice(s){
+    return s.split(" ").map(function(t){
+      var p = t.split(":"), b = p[1] ? parseFloat(p[1]) : 1;
+      return p[0] === "R" ? {rest:true, b:b} : {n:N(p[0]), b:b};
+    });
+  }
+  var DUET = {};
+  function mkDuet(name, lines){
+    var lo = 9, hi = -9;
+    var out = lines.map(function(pair){
+      var r = voice(pair[0]), l = voice(pair[1]), at = {}, total = 0;
+      [[r, "r"], [l, "l"]].forEach(function(v){
+        var t = 0;
+        v[0].forEach(function(x){
+          x.t = t; x.hand = v[1];
+          if(!x.rest){ (at[t] = at[t] || []).push(x); lo = Math.min(lo, x.n.oct); hi = Math.max(hi, x.n.oct); }
+          t += x.b;
+        });
+        total = Math.max(total, t);
+      });
+      var times = Object.keys(at).map(parseFloat).sort(function(a, b){ return a - b; });
+      var steps = times.map(function(t, i){
+        at[t].forEach(function(x){ x.step = i; });
+        return {t:t, notes:at[t], len:(i + 1 < times.length ? times[i + 1] : total) - t};
+      });
+      var quick = r.concat(l).some(function(x){ return !x.rest && x.b < 1; }); // quick notes need wider spacing
+      return {r:r, l:l, steps:steps, total:total, quick:quick};
+    });
+    DUET[name] = {name:name, duet:true, lines:out, lo:lo, hi:hi};
+  }
+  mkDuet("Taking turns", [
+    ["C D E:2 R:4", "R:4 E, D, C,:2"],
+    ["E F G:2 R:4", "R:4 G, F, E,:2"],
+    ["G F E D R:4", "R:4 C, D, E, F,"],
+    ["E D C:2 C:4", "R:4 C,:4"]]);
+  mkDuet("Hold and move", [
+    ["C D E F", "C,:4"], ["G F E D", "G,:4"], ["E F G E", "C,:2 G,:2"], ["F E D C", "G,:2 C,:2"], ["C:4", "C,:4"]]);
+  mkDuet("Moving apart and back", [
+    ["C D E F G:4", "C B, A, G, F,:4"], ["G F E D C:4", "F, G, A, B, C:4"]]);
+  mkDuet("Moving the same way", [
+    ["C D E F G F E D", "C, D, E, F, G, F, E, D,"], ["C:4", "C,:4"]]);
+  mkDuet("Ode to Joy, two hands", [
+    ["E E F G G F E D", "C,:4 G,:4"], ["C C D E E:1.5 D:.5 D:2", "C,:4 G,:4"],
+    ["E E F G G F E D", "C,:4 G,:4"], ["C C D E D:1.5 C:.5 C:2", "C,:4 G,:2 C,:2"]]);
+  mkDuet("Mary Had a Little Lamb, two hands", [
+    ["E D C D E E E:2", "C, G, C, G, C, G, C,:2"], ["D D D:2 E G G:2", "G, D, G,:2 C, G, C,:2"],
+    ["E D C D E E E E", "C, G, C, G, C, G, C, G,"], ["D D E D C:4", "G, D, G, D, C,:4"]]);
+  mkDuet("Twinkle Twinkle, two hands", [
+    ["C C G G A A G:2", "C,:2 E,:2 F,:2 E,:2"], ["F F E E D D C:2", "F,:2 C,:2 G,:2 C,:2"],
+    ["G G F F E E D:2", "C,:2 F,:2 C,:2 G,:2"], ["G G F F E E D:2", "C,:2 F,:2 C,:2 G,:2"],
+    ["C C G G A A G:2", "C,:2 E,:2 F,:2 E,:2"], ["F F E E D D C:2", "F,:2 C,:2 G,:2 C,:2"]]);
+  mkDuet("Minuet in G, two hands (opening)", [
+    ["D' G:.5 A:.5 B:.5 C':.5 D' G G", "G,:2 A, B,:3"],
+    ["E' C':.5 D':.5 E':.5 F#':.5 G' G G", "C:3 B,:3"],
+    ["C' D':.5 C':.5 B:.5 A:.5 B C':.5 B:.5 A:.5 G:.5", "A,:3 G,:3"],
+    ["F# G:.5 A:.5 B:.5 G:.5 A:3", "D B, G, D:3"]]);
+
   /* ================= the lesson path ================= */
   function sg(name, extra){ var o = {t:"song", song:name, title:name}; if(extra) Object.keys(extra).forEach(function(k){ o[k] = extra[k]; }); return o; }
   function sc(name){ return {t:"scale", scale:name, title:name + " scale"}; }
   function rh(name, tip){ return {t:"rhythm", rhythm:name, title:name, time:true, tip:tip}; }
   function st(name){ return sg(name, {time:true, hands:"right", title:name + ", in time"}); }
+  function du(name, tip){ return {t:"duet", duet:name, title:name, tip:tip}; }
   var PATH = [
     {name:"First keys", about:"Find your way around the white keys.", lessons:[
       {t:"find", title:"Find C and F", pool:["C","F"]},
@@ -389,13 +458,20 @@ p{margin:0}
       rh("Long and short taps", "A wide block gets one tap. Let it ring until the next block lights up."),
       rh("Quick taps", "Narrow blocks come quicker. On the staff they are the notes with a little flag."),
       rh("Held notes", "The widest blocks last the longest. On the staff they are the hollow notes."),
-      st("Hot Cross Buns"), st("Mary Had a Little Lamb"), st("Ode to Joy"), st("Jingle Bells")]}
+      st("Hot Cross Buns"), st("Mary Had a Little Lamb"), st("Ode to Joy"), st("Jingle Bells")]},
+    {name:"Two independent hands", about:"Each hand plays its own line.", lessons:[
+      du("Taking turns", "The top row is your right hand. The bottom row is your left hand. Here they take turns."),
+      du("Hold and move", "The left hand holds one long note while the right hand keeps moving."),
+      du("Moving apart and back", "Both thumbs start on middle C. The hands move away from each other, then come home."),
+      du("Moving the same way", "Both hands go up together, then down together."),
+      du("Ode to Joy, two hands"), du("Mary Had a Little Lamb, two hands"), du("Twinkle Twinkle, two hands"),
+      du("Minuet in G, two hands (opening)", "This one reaches higher. It is easiest on a real piano or with the screen sideways.")]}
   ];
   var LBY = {}, ORDER = [];
   PATH.forEach(function(lv, i){ lv.lessons.forEach(function(L, j){ L.id = "L" + i + "-" + j; L.level = lv.name; LBY[L.id] = L; ORDER.push(L); }); });
 
   /* ================= saved choices (this device only) ================= */
-  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false};
+  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false, auto:true};
   try{
     var raw = localStorage.getItem("quiet-keys");
     if(raw){
@@ -404,6 +480,7 @@ p{margin:0}
         save.done = o.done || {}; save.songs = o.songs || {};
         if(HANDS.indexOf(o.hands) !== -1) save.hands = o.hands;
         save.fast = !!o.fast; save.staff = !!o.staff;
+        if(o.auto === false) save.auto = false;
       }
     }
   }catch(e){}
@@ -476,6 +553,8 @@ p{margin:0}
   var winStart = 0, winManual = null;
   function placeWindow(need, free){
     var n = span(), start = winStart;
+    if(need.length) n = Math.max(n, Math.min(3, Math.max.apply(null, need) - Math.min.apply(null, need) + 1));
+    piano.classList.toggle("tight", n > span());
     if(n === 3) start = -1;
     else if(need.length){
       var main = need[0];
@@ -603,6 +682,7 @@ p{margin:0}
       if(L.staff) save.staff = true;
       keep(); startSong(SONG[L.song], L);
     }
+    else if(L.t === "duet") startDuet(DUET[L.duet], L);
     else if(L.t === "rhythm"){ save.staff = true; keep(); startSong(RHYTHM[L.rhythm], L); }
     else if(L.t === "scale"){ if(save.hands === "both"){ save.hands = "right"; keep(); } startSong(SCALE[L.scale], L); }
   }
@@ -722,13 +802,22 @@ p{margin:0}
     var want = midiOf(n, shift);
     if(S.song.any || ev.midi === want){
       S.pos++; S.msg = "";
-      if(S.pos >= curLine().length){ S.lineDone = true; S.msg = "You played the whole line."; }
+      if(S.pos >= curLine().length){
+        S.lineDone = true; S.msg = "You played the whole line.";
+        if(save.auto){ render(); later(800, nextLine); return; }
+      }
       render();
     } else {
       // In both-hands mode the left hand is busy with its chord: stay quiet about those keys only.
       if(both && ev.midi < want && (ev.oct < n.oct + shift || holds().indexOf(ev.key) !== -1)) return;
       S.msg = (ev.key === n.key ? offBy(ev, want) : oops(ev)) + " Look for the glowing key."; render();
     }
+  }
+  function nextLine(){
+    ++run;
+    if(S.line >= S.song.lines.length - 1){ finish(); return; }
+    S.line++; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; S.chordNow = null; render();
+    if(S.along) playAlong();
   }
   function hearLine(){
     var keepPos = S.pos, keepDone = S.lineDone;
@@ -815,10 +904,63 @@ p{margin:0}
     return left ? "Left hand." : "Right hand.";
   }
 
+  /* ---- two hands, each with its own line ---- */
+  function startDuet(piece, L){
+    ++run;
+    S = {view:"duet", L:L || null, piece:piece, line:0, pos:0, got:{}, lineDone:false, msg:"", busy:false, demoAt:-1, along:false};
+    render();
+  }
+  function dLine(){ return S.piece.lines[S.line]; }
+  function duetPress(ev){
+    if(S.lineDone) return;
+    var step = dLine().steps[S.pos];
+    var hit = step.notes.filter(function(x){ return midiOf(x.n) === ev.midi; })[0];
+    if(!hit){
+      var same = step.notes.filter(function(x){ return x.n.key === ev.key; })[0];
+      S.msg = (same ? offBy(ev, midiOf(same.n)) : oops(ev)) + " Look for the glowing key" + (step.notes.length > 1 ? "s." : "."); render(); return;
+    }
+    S.got[ev.midi] = true; S.msg = "";
+    if(step.notes.every(function(x){ return S.got[midiOf(x.n)]; })){
+      S.pos++; S.got = {};
+      if(S.pos >= dLine().steps.length){
+        S.lineDone = true; S.msg = "You played the whole line.";
+        if(save.auto){ render(); later(800, duetNext); return; }
+      }
+    }
+    render();
+  }
+  function duetNext(){
+    var wasAlong = S.along;
+    ++run;
+    if(S.line >= S.piece.lines.length - 1){ finish(); return; }
+    S.line++; S.pos = 0; S.got = {}; S.lineDone = false; S.busy = false; S.along = false; S.demoAt = -1; S.msg = ""; render();
+    if(wasAlong) duetDemo(true);
+  }
+  async function duetDemo(loop){
+    var steps = dLine().steps, bt = (loop ? (save.fast ? BEAT : BEAT * 1.8) : BEAT), id = ++run;
+    var keepPos = S.pos, keepDone = S.lineDone;
+    S.busy = true; S.along = !!loop; S.demoAt = -1;
+    S.msg = loop ? "Play each key on your piano as it glows. The line repeats until you stop." : "Listen. Wider blocks last longer.";
+    render();
+    if(!await wait(500, id)) return;
+    do {
+      if(steps[0].t > 0 && !await wait(steps[0].t * bt * 1000, id)) return;
+      for(var i = 0; i < steps.length; i++){
+        S.demoAt = i; render();
+        steps[i].notes.forEach(function(x){
+          tone(midiOf(x.n), Math.max(0.6, x.b * bt + 0.4), x.hand === "l" ? 0.3 : 0.45);
+          flash(x.n.key, x.n.oct, x.b * bt * 1000 * 0.9); // a held note stays lit for its own length
+        });
+        if(!await wait(steps[i].len * bt * 1000, id)) return;
+      }
+    } while(loop && S.along);
+    S.busy = false; S.along = false; S.demoAt = -1; S.pos = keepPos; S.lineDone = keepDone; S.msg = ""; render();
+  }
+
   /* ---- finishing ---- */
   function finish(){
     ++run;
-    var L = S.L, song = S.song || null;
+    var L = S.L, song = S.song || S.piece || null;
     if(L){ save.done[L.id] = true; }
     if(song && !song.scale) save.songs[song.name] = true;
     keep();
@@ -835,6 +977,7 @@ p{margin:0}
     else if(S.view === "chords") chordPress(ev);
     else if(S.view === "read") readPress(ev);
     else if(S.view === "song") songPress(ev);
+    else if(S.view === "duet") duetPress(ev);
   }
   function stopAll(){ ++run; S.along = false; S.busy = false; S.timing = false; S.counting = false; S.demoAt = -1; S.demoOct = null; }
 
@@ -842,16 +985,24 @@ p{margin:0}
   function targets(){
     if(S.view === "find" || S.view === "read") return S.reveal ? [{key:S.target.key, oct:S.target.oct}] : [];
     if(S.view === "chords" && !S.busy) return CH[S.order[S.round]].n.filter(function(n){ return !S.got[n.key]; }).map(function(n){ return {key:n.key, oct:-1}; });
+    if(S.view === "duet" && !S.busy && !S.lineDone){
+      return dLine().steps[S.pos].notes.filter(function(x){ return !S.got[midiOf(x.n)]; }).map(function(x){ return {key:x.n.key, oct:x.n.oct}; });
+    }
     if(S.view === "song" && !S.song.any && !S.busy && !S.lineDone){
       var n = curLine()[S.timing ? Math.max(0, S.demoAt) : S.pos].n;
       return [{key:n.key, oct:n.oct + songShift()}];
     }
     return [];
   }
-  function holds(){
+  function holds(){ // chord keys the left hand is holding in both-hands songs
     if(!isBoth()) return [];
     var ch = (S.busy || S.timing) ? S.chordNow : chordAt(curLine(), S.pos);
     return ch ? CH[ch].n.map(function(n){ return n.key; }) : [];
+  }
+  function heldNotes(){ // two-hand pieces: earlier notes that are still sounding at the current step
+    if(S.view !== "duet" || S.busy || S.lineDone) return [];
+    var ln = dLine(), now = ln.steps[S.pos].t;
+    return ln.r.concat(ln.l).filter(function(x){ return !x.rest && x.step < S.pos && x.t + x.b > now; });
   }
   function need(){
     var out = targets().map(function(t){ return t.oct; });
@@ -860,26 +1011,26 @@ p{margin:0}
     if(S.view === "read" && !out.length) out.push(S.target.oct);
     if(S.view === "echo" && !out.length) out.push(0);
     if(isBoth() && out.length) out.push(-1);
+    if(S.view === "duet") out = out.concat([S.piece.lo, S.piece.hi]); // keep both hands' keys on screen
     return out.map(function(o){ return Math.max(-1, Math.min(1, o)); });
   }
 
   /* ================= drawing ================= */
   var CLEF = {treble:"M314 801Q300 854 291 906Q282 958 282 1012Q282 1059 288 1100Q295 1142 307 1177Q320 1217 341 1252Q362 1288 386 1311Q409 1334 427 1334Q451 1334 493 1249Q514 1206 524 1156Q534 1106 534 1049Q534 978 515 908Q496 837 460 775Q423 713 372 666L407 498Q422 500 432 501Q442 502 447 502Q508 502 556 468Q604 433 632 377Q661 321 661 254Q661 177 622 116Q582 54 503 25Q508 8 532 -117Q538 -147 541 -164Q544 -182 545 -195Q546 -208 546 -225Q546 -275 522 -314Q497 -354 456 -376Q414 -398 363 -398Q311 -398 271 -378Q231 -359 208 -324Q185 -290 185 -245Q185 -197 212 -165Q238 -133 287 -133Q329 -133 356 -164Q382 -194 382 -236Q382 -272 357 -299Q332 -326 292 -326H282Q308 -365 364 -365Q433 -365 472 -320Q511 -275 511 -205Q511 -188 507 -160Q503 -131 493 -91Q483 -51 478 -25Q472 1 470 12Q436 2 390 2Q304 2 222 52Q142 102 96 184Q50 266 50 361Q50 451 91 530Q132 609 192 675Q253 741 314 801ZM341 826Q364 838 390 870Q416 903 440 945Q464 987 479 1030Q494 1072 494 1106Q494 1142 483 1163Q472 1184 445 1184Q421 1184 398 1162Q376 1140 358 1104Q341 1067 331 1022Q321 977 321 930Q321 898 328 872Q334 846 341 826ZM398 379Q371 373 347 354Q323 334 308 306Q294 279 294 248Q294 223 307 196Q320 170 339 154Q352 142 365 136Q380 129 380 123Q380 120 370 117Q332 126 302 151Q271 176 254 212Q236 247 236 287Q236 330 254 370Q271 410 302 442Q334 474 374 490L345 641Q229 547 174 456Q120 366 120 277Q120 212 154 156Q188 100 247 66Q306 31 380 31Q400 31 420 35Q441 39 464 45ZM495 55Q593 97 593 227Q593 270 571 306Q549 341 512 362Q475 383 429 383Z", bass:"M50 123Q216 231 288 301Q336 348 373 408Q410 469 432 536Q453 603 453 669Q453 728 435 774Q417 819 383 845Q349 871 302 871Q284 871 264 867Q245 863 224 855Q181 839 158 814Q135 788 135 765Q135 756 143 752Q151 748 158 748Q168 748 183 752Q190 754 196 755Q203 756 210 756Q248 756 272 734Q296 711 296 674Q296 638 266 612Q236 586 195 586Q146 586 111 617Q76 648 76 697Q76 756 109 802Q142 848 198 874Q255 900 324 900Q400 900 460 867Q520 834 556 776Q591 719 591 646Q591 551 538 464Q511 419 476 379Q442 339 389 298Q336 256 256 208Q176 160 57 101ZM687 809Q710 809 726 793Q742 777 742 754Q742 731 726 716Q710 700 687 700Q664 700 648 716Q632 731 632 754Q632 777 648 793Q664 809 687 809ZM687 589Q710 589 726 573Q742 557 742 534Q742 511 726 496Q710 480 687 480Q664 480 648 496Q632 511 632 534Q632 557 648 573Q664 589 687 589Z"};
   function stepOf(n, shift){ return LETTERS.indexOf(n.letter) + 7 * (n.oct + (shift || 0)); } // middle C = 0
-  function staff(items, clef, big){
-    var x = 70, xs = [];
-    items.forEach(function(it){ xs.push(x); x += 18 + it.b * 18; });
-    if(big) xs = [118];
-    var W = big ? 210 : Math.max(210, x + 4), H = 128, INK = "#16222b", DIM = "#a9b3b0";
-    function y(step){ return clef === "treble" ? 84 - (step - 2) * 5 : 84 - (step + 10) * 5; }
-    var h = '<div class="staffbox' + (big ? ' solo' : '') + '"><svg viewBox="0 0 ' + W + ' ' + H + '" width="' + Math.round(W * (big ? 1.3 : 1)) + '" height="' + Math.round(H * (big ? 1.3 : 1)) + '" role="img" aria-label="' + clef + ' staff">';
-    for(var k = 0; k < 5; k++) h += '<line x1="4" x2="' + (W - 4) + '" y1="' + (44 + k * 10) + '" y2="' + (44 + k * 10) + '" stroke="' + INK + '" stroke-width="1.2"/>';
-    h += '<path d="' + CLEF[clef] + '" fill="' + INK + '" transform="translate(6 84) scale(0.042 -0.042)"/>';
-    items.forEach(function(it, i){
-      var st = stepOf(it.n, it.shift), cx = xs[i], cy = y(st), col = it.st === "done" ? DIM : INK, s;
-      var top = clef === "treble" ? 12 : 0, bot = clef === "treble" ? 0 : -12;
-      if(st >= top) for(s = top; s <= st; s += 2) h += '<line x1="' + (cx - 11) + '" x2="' + (cx + 11) + '" y1="' + y(s) + '" y2="' + y(s) + '" stroke="' + col + '" stroke-width="1.2"/>';
-      if(st <= bot) for(s = bot; s >= st; s -= 2) h += '<line x1="' + (cx - 11) + '" x2="' + (cx + 11) + '" y1="' + y(s) + '" y2="' + y(s) + '" stroke="' + col + '" stroke-width="1.2"/>';
+  var INK = "#16222b", DIM = "#a9b3b0";
+  /* One five-line staff with its notes. Each note carries its own x. top is the y of the staff's top line. */
+  function staffRow(clef, notes, W, top){
+    var bottom = top + 40;
+    function y(step){ return clef === "treble" ? bottom - (step - 2) * 5 : bottom - (step + 10) * 5; }
+    var h = "";
+    for(var k = 0; k < 5; k++) h += '<line x1="4" x2="' + (W - 4) + '" y1="' + (top + k * 10) + '" y2="' + (top + k * 10) + '" stroke="' + INK + '" stroke-width="1.2"/>';
+    h += '<path d="' + CLEF[clef] + '" fill="' + INK + '" transform="translate(6 ' + bottom + ') scale(0.042 -0.042)"/>';
+    notes.forEach(function(it){
+      var st = stepOf(it.n, it.shift), cx = it.x, cy = y(st), col = it.st === "done" ? DIM : INK, s;
+      var hi = clef === "treble" ? 12 : 0, lo = clef === "treble" ? 0 : -12;
+      if(st >= hi) for(s = hi; s <= st; s += 2) h += '<line x1="' + (cx - 11) + '" x2="' + (cx + 11) + '" y1="' + y(s) + '" y2="' + y(s) + '" stroke="' + col + '" stroke-width="1.2"/>';
+      if(st <= lo) for(s = lo; s >= st; s -= 2) h += '<line x1="' + (cx - 11) + '" x2="' + (cx + 11) + '" y1="' + y(s) + '" y2="' + y(s) + '" stroke="' + col + '" stroke-width="1.2"/>';
       if(it.st === "now") h += '<circle cx="' + cx + '" cy="' + cy + '" r="13" fill="var(--note-' + it.n.letter + ')"/>';
       var hollow = it.b >= 2;
       h += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="6.4" ry="4.7" transform="rotate(-20 ' + cx + ' ' + cy + ')" fill="' + (hollow ? "none" : col) + '" stroke="' + col + '" stroke-width="1.6"/>';
@@ -895,9 +1046,25 @@ p{margin:0}
         }
       }
       if(it.b === 1.5 || it.b === 3 || it.b === 0.75) h += '<circle cx="' + (cx + 11) + '" cy="' + (cy - (st % 2 === 0 ? 3 : 0)) + '" r="1.8" fill="' + col + '"/>';
-      if(it.n.acc) h += '<text x="' + (cx - 17) + '" y="' + (cy + 5) + '" font-size="15" fill="' + col + '" text-anchor="middle">' + (it.n.acc === "#" ? "♯" : "♭") + '</text>';
+      if(it.n.acc) h += '<text x="' + (cx - 17) + '" y="' + (cy + 5) + '" font-size="15" fill="' + col + '" text-anchor="middle">' + (it.n.acc === "#" ? "\u266f" : "\u266d") + '</text>';
     });
-    return h + '</svg></div>';
+    return h;
+  }
+  function staff(items, clef, big){
+    var x = 70;
+    items.forEach(function(it){ it.x = x; x += 18 + it.b * 18; });
+    if(big) items[0].x = 118;
+    var W = big ? 210 : Math.max(210, x + 4), H = 128, k = big ? 1.3 : 1;
+    return '<div class="staffbox' + (big ? ' solo' : '') + '"><svg viewBox="0 0 ' + W + ' ' + H + '" width="' + Math.round(W * k) + '" height="' + Math.round(H * k) + '" role="img" aria-label="' + clef + ' staff">' +
+      staffRow(clef, items, W, 44) + '</svg></div>';
+  }
+  /* Two staves joined at the left: right hand on top (treble), left hand below (bass), lined up in time */
+  function grandStaff(ln, stateOf){
+    var U = ln.quick ? 46 : 34, W = Math.max(210, 70 + ln.total * U + 14), H = 236;
+    function row(v){ return v.filter(function(x){ return !x.rest; }).map(function(x){ return {n:x.n, b:x.b, x:74 + x.t * U, st:stateOf(x)}; }); }
+    return '<div class="staffbox"><svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="two staves, right hand above left hand">' +
+      staffRow("treble", row(ln.r), W, 40) + staffRow("bass", row(ln.l), W, 150) +
+      '<line x1="4" x2="4" y1="40" y2="190" stroke="' + INK + '" stroke-width="2.4"/></svg></div>';
   }
   function dots(total, filled){
     var h = '<div class="dots" role="img" aria-label="progress">';
@@ -940,7 +1107,7 @@ p{margin:0}
         });
         h += '</div></div>';
       });
-      h += '<p class="muted">More levels are being written: two independent hands, full pieces, and advanced technique.</p>';
+      h += '<p class="muted">More levels are being written: full pieces and advanced technique.</p>';
     }
 
     else if(S.view === "songs"){
@@ -1041,7 +1208,55 @@ p{margin:0}
         h += '<button class="btn ghost" data-act="hands"' + dis + '>Hands: ' + save.hands + '</button>';
         h += '<button class="btn ghost" data-act="speed"' + dis + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
         h += '<button class="btn ghost" data-act="staff"' + dis + '>Staff: ' + (save.staff ? "on" : "off") + '</button>';
+        h += '<button class="btn ghost" data-act="auto"' + dis + '>Auto next line: ' + (save.auto ? "on" : "off") + '</button>';
         h += '<button class="btn ghost" data-act="hear"' + dis + '>Hear this line</button>';
+      }
+      h += '</div>';
+    }
+
+    else if(S.view === "duet"){
+      var ln = dLine(), piece = S.piece, U = ln.quick ? 64 : 40, cur = S.busy ? S.demoAt : (S.lineDone ? -1 : S.pos);
+      var curT = cur >= 0 ? ln.steps[cur].t : -1;
+      var stX = function(x){ // a held note stays current until its own length runs out
+        if(S.lineDone) return "done";
+        if(cur < 0 || x.step > cur) return "";
+        return (x.step === cur || x.t + x.b > curT) ? "now" : "done";
+      };
+      h += dots(piece.lines.length, S.line + (S.lineDone ? 1 : 0));
+      h += '<h2>' + piece.name + '</h2>';
+      if(S.L && S.L.tip && S.line === 0 && S.pos === 0 && !S.busy && !S.lineDone) h += '<p class="muted">' + S.L.tip + '</p>';
+      if(save.staff) h += grandStaff(ln, stX);
+      h += '<div class="duet"><div class="duet-in" style="width:' + (ln.total * U + 4) + 'px">';
+      [["Right hand", ln.r], ["Left hand", ln.l]].forEach(function(v){
+        h += '<div class="hand">' + v[0] + '</div><div class="lane">';
+        v[1].forEach(function(x){
+          if(x.rest) return;
+          h += '<span class="chip ' + stX(x) + (x.n.oct > 0 ? ' hi' : x.n.oct < 0 ? ' lo' : '') + '" style="--nc:var(--note-' + x.n.letter + ');left:' + (x.t * U) + 'px;width:' + (x.b * U - 4) + 'px">' + show(x.n.name) + '</span>';
+        });
+        h += '</div>';
+      });
+      h += '</div></div>';
+      if(!S.lineDone && !S.busy){
+        var stp = ln.steps[S.pos];
+        h += '<div class="ask">' + (stp.notes.length > 1 ? "Together" : (stp.notes[0].hand === "r" ? "Right" : "Left")) + ' ' + stp.notes.map(function(x){ return big(x.n); }).join(" ") + '</div>';
+        h += '<p class="muted">' + (heldNotes().length ? "Keep holding the steady colored key while you play the glowing one. " : "") + 'A bar on top of a block means the higher keys. A bar underneath means the lower keys.</p>';
+      }
+      h += '<p class="msg">' + (S.msg || "") + '</p>';
+      h += '<div class="actions">';
+      var dLast = S.line >= piece.lines.length - 1;
+      if(S.along){
+        h += '<button class="btn" data-act="d-stop">Stop</button>';
+        h += '<button class="btn ghost" data-act="d-next">' + (dLast ? "Finish" : "Next line") + '</button>';
+      } else if(S.lineDone){
+        h += '<button class="btn" data-act="d-next">' + (dLast ? "Finish" : "Next line") + '</button>';
+        h += '<button class="btn ghost" data-act="d-again">Play this line again</button>';
+      } else {
+        var dd = S.busy ? " disabled" : "";
+        h += '<button class="btn" data-act="d-along"' + dd + '>Play along on my piano</button>';
+        h += '<button class="btn ghost" data-act="speed"' + dd + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
+        h += '<button class="btn ghost" data-act="staff"' + dd + '>Staff: ' + (save.staff ? "on" : "off") + '</button>';
+        h += '<button class="btn ghost" data-act="auto"' + dd + '>Auto next line: ' + (save.auto ? "on" : "off") + '</button>';
+        h += '<button class="btn ghost" data-act="d-hear"' + dd + '>Hear this line</button>';
       }
       h += '</div>';
     }
@@ -1062,15 +1277,19 @@ p{margin:0}
     stage.innerHTML = h;
 
     placeWindow(need(), free);
-    var t = targets(), hd = holds();
+    var t = targets(), hd = holds(), held = heldNotes();
     OCTS.forEach(function(o){
       Object.keys(keyEls[o]).forEach(function(k){
         var el = keyEls[o][k];
         el.classList.toggle("target", t.some(function(x){ return x.key === k && Math.max(-1, Math.min(1, x.oct)) === o; }));
-        el.classList.toggle("hold", o === -1 && hd.indexOf(k) !== -1);
+        el.classList.toggle("hold", (o === -1 && hd.indexOf(k) !== -1) || held.some(function(x){ return x.n.key === k && x.n.oct === o; }));
       });
     });
     piano.classList.toggle("hide-labels", S.view === "find");
+    if(S.view === "duet"){
+      var nowChip = stage.querySelector(".duet .chip.now"), box = stage.querySelector(".duet");
+      if(nowChip && box) box.scrollLeft = Math.max(0, nowChip.offsetLeft - box.clientWidth / 2);
+    }
   }
 
   document.addEventListener("click", function(e){
@@ -1087,6 +1306,11 @@ p{margin:0}
     else if(a === "midi") connectMidi();
     else if(a === "win-down"){ winManual = Math.max(-1, winStart - 1); render(); }
     else if(a === "win-up"){ winManual = Math.min(1, winStart + 1); render(); }
+    else if(a === "d-hear") duetDemo(false);
+    else if(a === "d-along") duetDemo(true);
+    else if(a === "d-stop"){ ++run; S.along = false; S.busy = false; S.demoAt = -1; S.pos = 0; S.got = {}; S.lineDone = false; S.msg = ""; render(); }
+    else if(a === "d-again"){ ++run; S.pos = 0; S.got = {}; S.lineDone = false; S.msg = ""; render(); }
+    else if(a === "d-next") duetNext();
     else if(a === "hear") hearLine();
     else if(a === "along") playAlong();
     else if(a === "time") playInTime();
@@ -1097,11 +1321,9 @@ p{margin:0}
     else if(a === "speed"){ save.fast = !save.fast; keep(); render(); }
     else if(a === "staff"){ save.staff = !save.staff; keep(); render(); }
     else if(a === "stop"){ stopAll(); S.marks = null; S.pos = 0; S.msg = ""; render(); }
-    else if(a === "line-again"){ S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; render(); }
-    else if(a === "next-line"){
-      if(S.line >= S.song.lines.length - 1) finish();
-      else { S.line++; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; S.chordNow = null; render(); if(S.along) playAlong(); }
-    }
+    else if(a === "line-again"){ ++run; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; render(); }
+    else if(a === "next-line") nextLine();
+    else if(a === "auto"){ save.auto = !save.auto; keep(); render(); }
   });
 
   window.__qk = {state:function(){ return S; }}; // used by the automated lesson check
