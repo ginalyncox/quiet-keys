@@ -1,0 +1,17 @@
+{
+  "name": "quiet-keys",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Quiet Keys Piano: a calm piano practice app. Gina Makes.",
+  "scripts": {
+    "sync": "cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.6.11"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.6.11",
+    "@capacitor/ios": "^7.6.11"
+  }
+}

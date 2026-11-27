@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quiet Keys Piano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: one screen. One choice or one prompt on top, a live piano always at the bottom.
+     One visual world on purpose: a dim practice room with ivory keys. */
+  --room:#16222b;
+  --panel:#203340;
+  --line:#3a5666;
+  --ivory:#f5efe2;
+  --ink:#16222b;
+  --text:#eef3f1;
+  --muted:#a9bcc4;
+  --note-C:#ff7a6b; --note-D:#ffa94d; --note-E:#ffd84d; --note-F:#7ddc7a;
+  --note-G:#4fd1c5; --note-A:#6fb1ff; --note-B:#c59bff;
+  --display:"Bricolage Grotesque","Trebuchet MS",Verdana,sans-serif;
+  --body:"Atkinson Hyperlegible",Verdana,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--room);color:var(--text);font-family:var(--body);font-size:18px;line-height:1.4;display:flex;justify-content:center;-webkit-tap-highlight-color:transparent}
+.app{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--note-A);outline-offset:2px}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 6px calc(16px + env(safe-area-inset-left));min-height:52px}
+.brand{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:.01em}
+.home-btn{background:transparent;border:2px solid var(--line);border-radius:999px;padding:6px 16px;font-weight:700}
+.home-btn[hidden]{display:none}
+
+#stage{flex:1;min-height:0;overflow-y:auto;padding:6px 16px 12px;display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--display);font-weight:800;font-size:30px;line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:20px;margin:0;color:var(--muted)}
+p{margin:0}
+.muted{color:var(--muted);font-size:16px}
+.rowline{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap}
+
+/* Choices look like piano keys lying on their side */
+.slabs{display:flex;flex-direction:column;gap:9px}
+.slab{background:var(--ivory);color:var(--ink);border:0;border-radius:6px 16px 16px 6px;border-left:10px solid var(--tab,var(--note-G));padding:10px 16px;text-align:left;display:flex;flex-direction:column;gap:2px;box-shadow:0 4px 0 #0c1419}
+.slab:active{transform:translateY(3px);box-shadow:0 1px 0 #0c1419}
+.slab b{font-family:var(--display);font-weight:800;font-size:21px}
+.slab span{font-size:16px}
+.slab .row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.done-mark{margin-left:auto;font-weight:700;font-size:15px;background:var(--ink);color:var(--ivory);border-radius:999px;padding:2px 10px}
+
+.dots{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--line)}
+.dot.full{background:var(--ivory);border-color:var(--ivory)}
+.dot.here{border-color:var(--ivory)}
+
+.ask{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:800;font-size:30px}
+.big{width:60px;height:60px;border-radius:50%;background:var(--nc);color:var(--ink);display:grid;place-items:center;font-size:36px;font-family:var(--display);font-weight:800;flex:none}
+.hint{background:var(--panel);border-radius:14px;padding:10px 14px}
+.msg{min-height:26px;font-weight:700}
+
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:flex-end;min-height:44px}
+.chip{height:40px;border-radius:9px;background:var(--nc);color:var(--ink);display:grid;place-items:center;font-weight:700;font-size:18px;opacity:.45;flex:none}
+.chip.done{opacity:1}
+.chip.now{opacity:1;box-shadow:0 0 0 3px var(--room),0 0 0 6px var(--ivory)}
+.chip.sm{height:26px;width:26px;font-size:14px;opacity:1}
+.cw{display:inline-flex;flex-direction:column;gap:4px;padding-top:26px;position:relative}
+.tag{position:absolute;top:0;left:0;height:22px;min-width:22px;padding:0 4px;border:2px solid var(--ivory);border-radius:5px;font-size:13px;line-height:18px;font-weight:700;text-align:center;color:var(--ivory)}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{background:var(--ivory);color:var(--ink);border:0;border-radius:12px;padding:11px 16px;font-weight:700;box-shadow:0 4px 0 #0c1419}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #0c1419}
+.btn.ghost{background:transparent;color:var(--text);border:2px solid var(--line);box-shadow:none}
+.btn[disabled]{opacity:.5}
+
+/* Piano */
+.bed{flex:0 0 36%;min-height:165px;max-height:340px;display:flex;flex-direction:column;padding:0 calc(8px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left))}
+.groups{position:relative;height:24px;flex:none}
+.groups span{position:absolute;bottom:0;height:20px;border:2px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;font-size:13px;line-height:16px;text-align:center;color:var(--muted);font-weight:700}
+#piano{flex:1;min-height:0;display:flex;gap:3px;touch-action:none;user-select:none;-webkit-user-select:none}
+.oct{flex:1;min-width:0;display:flex;flex-direction:column}
+.oct.low{display:none}
+.oct.low .key.white{background:#e0d8c6}
+.keys{position:relative;flex:1;min-height:0;display:flex;gap:3px;border-top:6px solid #7a1f2b}
+.key{border:0;padding:0;margin:0}
+.key.white{flex:1;min-width:0;background:var(--ivory);border-radius:0 0 9px 9px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;transition:background .12s}
+.key.black{position:absolute;top:0;height:60%;width:8.6%;background:#0c1419;border-radius:0 0 6px 6px;transform:translateX(-50%);z-index:2;border:1px solid #2a3f4c;border-top:0}
+.label{width:32px;height:32px;border-radius:50%;background:var(--nc);color:var(--ink);font-weight:700;font-size:18px;display:grid;place-items:center;pointer-events:none}
+#piano.hide-labels .label{visibility:hidden}
+#piano.hide-labels .key.target .label{visibility:visible}
+.oct .key.white.lit,.oct .key.white.target,.oct .key.white.hold{background:var(--nc)}
+.key.white.lit .label,.key.white.target .label,.key.white.hold .label{background:var(--ink);color:var(--ivory)}
+.key.black.lit{background:#4a6577}
+.key.white.target{animation:glow 1.1s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:inset 0 0 0 4px var(--ink)}50%{box-shadow:inset 0 0 0 9px var(--ink)}}
+@media (orientation:landscape) and (min-width:600px){
+  .app{max-width:1000px}
+  .oct.low{display:flex}
+  .bed{flex-basis:48%;min-height:140px}
+  header{min-height:40px;padding:6px 16px 2px}
+  .slabs{display:grid;grid-template-columns:1fr 1fr}
+  h1{font-size:24px}
+}
+@media (prefers-reduced-motion:reduce){
+  .key.white.target{animation:none;box-shadow:inset 0 0 0 6px var(--ink)}
+  .slab:active,.btn:active{transform:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">Quiet Keys</div>
+    <button class="home-btn" id="homeBtn" data-act="home" hidden>Home</button>
+  </header>
+
+  <main id="stage" aria-live="polite"></main>
+
+  <div class="bed">
+    <div id="piano" role="group" aria-label="Piano keys"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- data ---------- */
+  var WHITE = ["C","D","E","F","G","A","B"];
+  var NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  var BLACK = [["C#",1],["D#",2],["F#",4],["G#",5],["A#",6]]; // sits on the line after this many white keys
+  var FREQ = {"C":261.63,"C#":277.18,"D":293.66,"D#":311.13,"E":329.63,"F":349.23,"F#":369.99,"G":392.00,"G#":415.30,"A":440.00,"A#":466.16,"B":493.88};
+  var WHERE = {
+    C:"C is the white key just left of the black pair.",
+    D:"D sits in the middle of the black pair.",
+    E:"E is the white key just right of the black pair.",
+    F:"F is the white key just left of the black trio.",
+    G:"G sits inside the black trio, on the left side.",
+    A:"A sits inside the black trio, on the right side.",
+    B:"B is the white key just right of the black trio."
+  };
+  var FINGER_R = {C:"thumb",D:"pointer finger",E:"middle finger",F:"ring finger",G:"pinky",A:"pinky, reaching one key to the right"};
+  var FINGER_L = {C:"pinky",D:"ring finger",E:"middle finger",F:"pointer finger",G:"thumb",A:"thumb, reaching one key to the right"};
+  /* Close-together chord shapes, so the left hand barely moves */
+  var CHORDS = {C:["C","E","G"], F:["C","F","A"], G:["B","D","G"]};
+  var CHORD_FINGERS = {C:["pinky","middle finger","thumb"], F:["pinky","pointer finger","thumb"], G:["pinky","ring finger","thumb"]};
+  var FIND_POOLS = [["C","F"],["C","D","E","F"],["C","D","E","F","G","A","B"]];
+  var HANDS = ["right","left","both"];
+  var BEAT = 0.5; // seconds for one plain note
+
+  /* "E:2@C" = note E, held for two plain notes, left-hand chord changes to C here */
+  function line(s){
+    return s.split(" ").map(function(t){
+      var a = t.split("@"), p = a[0].split(":");
+      return [p[0], p[1] ? parseFloat(p[1]) : 1, a[1] || null];
+    });
+  }
+  var JB1 = "E@C E E:2 E E E:2", JB2 = "E@C G C:1.5 D:.5 E:4", JB3 = "F@F F F:1.5 F:.5 F@C E E E:.5 E:.5";
+  var SONGS = [
+    {name:"Hot Cross Buns", lines:[
+      line("E@C D@G C:2@C"), line("E@C D@G C:2@C"),
+      line("C:.5@C C:.5 C:.5 C:.5 D:.5@G D:.5 D:.5 D:.5"),
+      line("E@C D@G C:2@C")]},
+    {name:"Mary Had a Little Lamb", lines:[
+      line("E@C D C D E E E:2"),
+      line("D@G D D:2 E@C G G:2"),
+      line("E@C D C D E E E E"),
+      line("D@G D E D C:4@C")]},
+    {name:"Twinkle Twinkle Little Star", lines:[
+      line("C@C C G G A@F A G:2@C"),
+      line("F@F F E@C E D@G D C:2@C"),
+      line("G@C G F@F F E@C E D:2@G"),
+      line("G@C G F@F F E@C E D:2@G"),
+      line("C@C C G G A@F A G:2@C"),
+      line("F@F F E@C E D@G D C:2@C")]},
+    {name:"London Bridge", lines:[
+      line("G@C A G F E F G:2"),
+      line("D@G E F:2 E@C F G:2"),
+      line("G@C A G F E F G:2"),
+      line("D:2@G G:2 E@C C:2")]},
+    {name:"Ode to Joy", lines:[
+      line("E@C E F G G@G F E D"),
+      line("C@C C D E E:1.5@G D:.5 D:2"),
+      line("E@C E F G G@G F E D"),
+      line("C@C C D E D:1.5@G C:.5 C:2@C")]},
+    {name:"Jingle Bells", lines:[
+      line(JB1), line(JB2), line(JB3),
+      line("E@G D D E D:2 G:2"),
+      line(JB1), line(JB2), line(JB3),
+      line("G@G G F D C:4@C")]},
+    {name:"When the Saints Go Marching In", lines:[
+      line("C@C E F G:4"),
+      line("C@C E F G:4"),
+      line("C@C E F G:2 E:2 C:2 E:2 D:4@G"),
+      line("E@C E D C:3 C E:2 G:2 G F:4@F"),
+      line("E@C F G:2 E:2 C:2@G D:2 C:4@C")]},
+    {name:"Largo from the New World Symphony", lines:[
+      line("E:1.5@C G:.5 G:2 E:1.5 D:.5 C:2"),
+      line("D:1.5@G E:.5 G:1.5 E:.5 D:4"),
+      line("E:1.5@C G:.5 G:2 E:1.5 D:.5 C:2"),
+      line("D@G E D:1.5 C:.5 C:4@C")]}
+  ];
+
+  /* ---------- saved choices (this browser only) ---------- */
+  var save = {findLevel:0, songs:{}, hands:"right", fast:false};
+  try{
+    var raw = localStorage.getItem("quiet-keys");
+    if(raw){
+      var o = JSON.parse(raw);
+      if(o && typeof o === "object"){
+        save.findLevel = Math.min(2, Math.max(0, o.findLevel|0));
+        save.songs = o.songs || {};
+        if(HANDS.indexOf(o.hands) !== -1) save.hands = o.hands;
+        save.fast = !!o.fast;
+      }
+    }
+  }catch(e){}
+  function keep(){ try{ localStorage.setItem("quiet-keys", JSON.stringify(save)); }catch(e){} }
+
+  /* ---------- sound ---------- */
+  var ctx = null;
+  function audio(){
+    if(!ctx){ var AC = window.AudioContext || window.webkitAudioContext; if(AC){ try{ ctx = new AC(); }catch(e){ ctx = null; } } }
+    if(ctx && ctx.state === "suspended"){ try{ ctx.resume(); }catch(e){} }
+    return ctx;
+  }
+  function tone(note, dur, shift, vol){
+    var c = audio(); if(!c) return;
+    dur = dur || 1.2; shift = shift || 0;
+    var t = c.currentTime, f = FREQ[note] * Math.pow(2, shift);
+    var g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.45, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(c.destination);
+    var o1 = c.createOscillator(); o1.type = "triangle"; o1.frequency.value = f; o1.connect(g);
+    var g2 = c.createGain(); g2.gain.value = shift < 0 ? 0.5 : 0.18; g2.connect(g); // low notes need help on phone speakers
+    var o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = f * 2; o2.connect(g2);
+    o1.start(t); o2.start(t); o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  function playChord(ch, dur, shift){
+    CHORDS[ch].forEach(function(n){ tone(n, dur, shift, 0.22); });
+  }
+
+  /* ---------- piano ---------- */
+  var piano = document.getElementById("piano");
+  var stage = document.getElementById("stage");
+  var homeBtn = document.getElementById("homeBtn");
+  var keyEls = {"0":{}, "-1":{}}; // 0 = main keys, -1 = lower keys shown when the screen is wide
+  [-1, 0].forEach(function(oct){
+    var box = document.createElement("div");
+    box.className = "oct " + (oct < 0 ? "low" : "main");
+    box.innerHTML = '<div class="groups" aria-hidden="true"><span style="left:10%;width:23%">pair</span><span style="left:52.8%;width:37.2%">trio</span></div>';
+    var keys = document.createElement("div"); keys.className = "keys"; box.appendChild(keys);
+    WHITE.forEach(function(n){
+      var b = document.createElement("button");
+      b.className = "key white"; b.dataset.note = n; b.dataset.oct = oct; b.style.setProperty("--nc", "var(--note-" + n + ")");
+      b.setAttribute("aria-label", oct < 0 ? "low " + n : n);
+      b.innerHTML = '<span class="label">' + n + '</span>';
+      keys.appendChild(b); keyEls[oct][n] = b;
+    });
+    BLACK.forEach(function(p){
+      var b = document.createElement("button");
+      b.className = "key black"; b.dataset.note = p[0]; b.dataset.oct = oct; b.style.left = (p[1] / 7 * 100) + "%";
+      b.setAttribute("aria-label", "black key"); b.tabIndex = -1;
+      keys.appendChild(b); keyEls[oct][p[0]] = b;
+    });
+    piano.appendChild(box);
+  });
+
+  var wideMq = window.matchMedia("(orientation:landscape) and (min-width:600px)");
+  function wide(){ return wideMq.matches; }
+  function keyFor(note, oct){ return keyEls[(oct === -1 && wide()) ? -1 : 0][note]; }
+  function flash(note, ms, oct){
+    var el = keyFor(note, oct); if(!el) return;
+    el.classList.add("lit");
+    setTimeout(function(){ el.classList.remove("lit"); }, ms);
+  }
+  if(wideMq.addEventListener) wideMq.addEventListener("change", function(){ render(); });
+  else if(wideMq.addListener) wideMq.addListener(function(){ render(); });
+
+  piano.addEventListener("pointerdown", function(e){
+    var k = e.target.closest(".key"); if(!k) return;
+    e.preventDefault(); press(k.dataset.note, undefined, parseInt(k.dataset.oct, 10));
+  });
+  piano.addEventListener("click", function(e){ // keyboard users (Enter or Space on a key)
+    if(e.detail !== 0) return;
+    var k = e.target.closest(".key"); if(k) press(k.dataset.note, undefined, parseInt(k.dataset.oct, 10));
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    var n = (e.key || "").toUpperCase();
+    if(WHITE.indexOf(n) !== -1) press(n);
+  });
+
+  /* ---------- real keyboard over USB (MIDI) ---------- */
+  var midiOn = false, midiMsg = "";
+  function onMidi(e){
+    var d = e.data; if(!d || d.length < 3) return;
+    if((d[0] & 0xf0) === 0x90 && d[2] > 0) press(NAMES[d[1] % 12], d[1]);
+  }
+  function connectMidi(){
+    if(!navigator.requestMIDIAccess){
+      midiMsg = "This browser cannot connect to a keyboard. Play along still works."; render(); return;
+    }
+    try{
+      navigator.requestMIDIAccess().then(function(acc){
+        function hook(){
+          var n = 0;
+          acc.inputs.forEach(function(inp){ inp.onmidimessage = onMidi; n++; });
+          midiOn = n > 0;
+          midiMsg = midiOn ? "Keyboard connected. Play any key to test it." : "No keyboard found. Plug in the USB cable, turn the keyboard on, then tap Connect again.";
+          render();
+        }
+        acc.onstatechange = hook; hook();
+      }).catch(function(){
+        midiMsg = "The keyboard connection is blocked on this page. Play along still works."; render();
+      });
+    }catch(e){
+      midiMsg = "The keyboard connection is blocked on this page. Play along still works."; render();
+    }
+  }
+
+  /* ---------- inside the iPad or iPhone app: the app shell listens to the keyboard for us ---------- */
+  var isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  window.quietKeysNote = function(n){ press(NAMES[n % 12], n); };
+  window.quietKeysDevices = function(count){
+    midiOn = count > 0;
+    midiMsg = midiOn ? "Keyboard connected. Play any key to test it." : "";
+    if(S.view === "home") render();
+  };
+
+  /* ---------- state ---------- */
+  var S = {view:"home"};
+  var run = 0; // bump to cancel anything timed
+
+  function wait(ms, id){ return new Promise(function(r){ setTimeout(function(){ r(run === id); }, ms); }); }
+  function later(ms, fn){ var id = ++run; setTimeout(function(){ if(run === id) fn(); }, ms); }
+
+  async function demo(items, onStep, beat){
+    var bt = beat || BEAT;
+    var inSong = S.view === "song";
+    var both = inSong && save.hands === "both";
+    var shift = inSong && save.hands === "left" ? -1 : 0;
+    var id = ++run;
+    S.busy = true; S.demoAt = -1; render();
+    if(!await wait(500, id)) return false;
+    for(var i = 0; i < items.length; i++){
+      var n = items[i][0], b = items[i][1], ch = items[i][2];
+      S.demoAt = i; if(onStep) onStep(i);
+      if(both && ch){
+        var span = b;
+        for(var j = i + 1; j < items.length && !items[j][2]; j++) span += items[j][1];
+        S.chordNow = ch;
+        playChord(ch, Math.min(3.2, span * bt + 0.4), -1);
+      }
+      render();
+      tone(n, Math.max(0.6, b * bt + 0.5), shift);
+      flash(n, b * bt * 1000 * 0.8, shift);
+      if(!await wait(b * bt * 1000, id)) return false;
+    }
+    S.busy = false; S.demoAt = -1; render();
+    return true;
+  }
+
+  function pick(pool, not){
+    var n;
+    do { n = pool[Math.floor(Math.random() * pool.length)]; } while(pool.length > 2 && n === not);
+    return n;
+  }
+  function oops(note){ return note.length > 1 ? "That is a black key." : "That one is " + note + "."; }
+
+  /* ---------- Find a key ---------- */
+  function startFind(){
+    ++run;
+    var pool = FIND_POOLS[save.findLevel];
+    S = {view:"find", round:0, total:6, misses:0, pool:pool, target:pick(pool), reveal:false, msg:"", busy:false};
+    render();
+  }
+  function findPress(note){
+    if(note === S.target){
+      S.reveal = true; S.msg = "Yes. That is " + note + "."; S.round++; S.busy = true; render();
+      later(900, function(){
+        if(S.round >= S.total){
+          var grew = false;
+          if(S.misses <= 1 && save.findLevel < 2){ save.findLevel++; grew = true; keep(); }
+          finish("find", grew ? "New letters join in next time." : "");
+        } else {
+          S.target = pick(S.pool, S.target); S.reveal = false; S.msg = ""; S.busy = false; render();
+        }
+      });
+    } else {
+      S.misses++; S.reveal = true;
+      S.msg = oops(note) + " Tap the glowing key.";
+      render();
+    }
+  }
+
+  /* ---------- Copy me ---------- */
+  function makeSeq(len){
+    var pool = ["C","D","E","F","G"], i = Math.floor(Math.random() * pool.length), out = [pool[i]];
+    while(out.length < len){
+      var step = Math.random() < 0.5 ? -1 : 1;
+      if(i + step < 0 || i + step >= pool.length) step = -step;
+      i += step; out.push(pool[i]);
+    }
+    return out;
+  }
+  function startEcho(){
+    ++run;
+    S = {view:"echo", round:0, total:5, len:2, wins:0, seq:makeSeq(2), pos:0, shown:0, msg:"Watch and listen.", busy:true};
+    showEcho();
+  }
+  function showEcho(){
+    S.pos = 0; S.shown = 0; S.msg = "Watch and listen.";
+    demo(S.seq.map(function(n){ return [n, 1, null]; }), function(i){ S.shown = i + 1; })
+      .then(function(ok){ if(ok){ S.msg = "Your turn. Play the same keys."; render(); } });
+  }
+  function echoPress(note){
+    if(note === S.seq[S.pos]){
+      S.pos++;
+      if(S.pos >= S.seq.length){
+        S.round++; S.wins++; S.msg = "Yes. You copied it."; S.busy = true; render();
+        later(900, function(){
+          if(S.round >= S.total){ finish("echo", ""); return; }
+          if(S.wins % 2 === 0 && S.len < 4) S.len++;
+          S.seq = makeSeq(S.len); showEcho();
+        });
+      } else { S.msg = "Good. Keep going."; render(); }
+    } else {
+      S.msg = "Not quite. Here it is again."; S.busy = true; render();
+      later(700, showEcho);
+    }
+  }
+
+  /* ---------- Chords ---------- */
+  function startChords(){
+    ++run;
+    var rest = ["C","F","G"].sort(function(){ return Math.random() - 0.5; });
+    S = {view:"chords", round:0, total:6, order:["C","F","G"].concat(rest), got:{}, msg:"", busy:false};
+    render();
+  }
+  function chordPress(note){
+    var ch = S.order[S.round], notes = CHORDS[ch];
+    if(notes.indexOf(note) === -1){ S.msg = oops(note) + " It is not in this chord."; render(); return; }
+    S.got[note] = true;
+    if(notes.every(function(n){ return S.got[n]; })){
+      S.busy = true; S.msg = "That is the " + ch + " chord. Listen."; render();
+      later(450, function(){
+        playChord(ch, 1.6, 0);
+        notes.forEach(function(n){ flash(n, 900, -1); });
+        later(1500, function(){
+          S.round++;
+          if(S.round >= S.total){ finish("chords", "These three chords fit every song in this app."); return; }
+          S.got = {}; S.msg = ""; S.busy = false; render();
+        });
+      });
+    } else { S.msg = "Good. Keep going."; render(); }
+  }
+
+  /* ---------- Play a song ---------- */
+  function startSong(i){
+    ++run;
+    S = {view:"song", song:i, line:0, pos:0, lineDone:false, msg:"", busy:false, demoAt:-1, along:false, chordNow:null};
+    render();
+  }
+  function curLine(){ return SONGS[S.song].lines[S.line]; }
+  function chordAt(L, i){ for(var k = Math.min(i, L.length - 1); k >= 0; k--){ if(L[k][2]) return L[k][2]; } return null; }
+  function songPress(note, low){
+    if(S.lineDone) return;
+    if(save.hands === "both" && low) return; // lower keys are the left hand's chord keys
+    var want = curLine()[S.pos][0];
+    if(note === want){
+      S.pos++; S.msg = "";
+      if(S.pos >= curLine().length){ S.lineDone = true; S.msg = "You played the whole line."; }
+      render();
+    } else {
+      S.msg = oops(note) + " Look for the glowing key.";
+      render();
+    }
+  }
+  function hearLine(){
+    var keepPos = S.pos, keepDone = S.lineDone;
+    S.msg = "Listen. Wider blocks last longer.";
+    demo(curLine()).then(function(ok){ if(ok){ S.pos = keepPos; S.lineDone = keepDone; S.msg = ""; render(); } });
+  }
+  function playAlong(){
+    S.along = true;
+    S.msg = "Play each key on your piano as it glows. The line repeats until you stop.";
+    (function loop(){
+      demo(curLine(), null, save.fast ? BEAT : BEAT * 1.8).then(function(ok){ if(ok && S.along){ S.busy = true; loop(); } });
+    })();
+  }
+
+  /* ---------- shared ---------- */
+  function finish(from, extra){
+    ++run;
+    S = {view:"done", from:from, extra:extra || "", song:S.song};
+    render();
+  }
+  function press(note, midi, oct){
+    var low = midi !== undefined ? midi < 60 : oct === -1;
+    if(midi === undefined){
+      tone(note, 1.2, (low || (S.view === "song" && save.hands === "left")) ? -1 : 0);
+    }
+    flash(note, 200, low ? -1 : 0);
+    if(S.busy) return;
+    if(S.view === "find") findPress(note);
+    else if(S.view === "echo") echoPress(note);
+    else if(S.view === "chords") chordPress(note);
+    else if(S.view === "song") songPress(note, low);
+  }
+
+  function targets(){ // [note, which keys]: -1 means the lower keys when they are showing
+    if(S.view === "find") return S.reveal ? [[S.target, 0]] : [];
+    if(S.view === "chords" && !S.busy) return CHORDS[S.order[S.round]].filter(function(n){ return !S.got[n]; }).map(function(n){ return [n, -1]; });
+    if(S.view === "song" && !S.busy && !S.lineDone) return [[curLine()[S.pos][0], save.hands === "left" ? -1 : 0]];
+    return [];
+  }
+  function holds(){ // the left-hand chord, shown steady on the lower keys
+    if(S.view !== "song" || save.hands !== "both" || !wide()) return [];
+    var ch = S.busy ? S.chordNow : chordAt(curLine(), S.pos);
+    return ch ? CHORDS[ch] : [];
+  }
+  function dots(total, filled){
+    var h = '<div class="dots" role="img" aria-label="progress">';
+    for(var i = 0; i < total; i++) h += '<span class="dot' + (i < filled ? ' full' : (i === filled ? ' here' : '')) + '"></span>';
+    return h + '</div>';
+  }
+  function chip(n, beats, cls){
+    var w = 14 + beats * 20;
+    return '<span class="chip ' + (cls || '') + '" style="--nc:var(--note-' + n + ');width:' + w + 'px">' + n + '</span>';
+  }
+  function big(n){ return '<span class="big" style="--nc:var(--note-' + n + ')">' + n + '</span>'; }
+
+  function render(){
+    var h = "";
+    homeBtn.hidden = (S.view === "home");
+
+    if(S.view === "home"){
+      h += '<h1>Pick one thing.</h1>';
+      h += '<p class="muted">A few minutes is plenty. Stop whenever you like.</p>';
+      h += '<div class="slabs">';
+      h += '<button class="slab" data-act="find" style="--tab:var(--note-C)"><b>Find a key</b><span>Learn where each letter lives.</span></button>';
+      h += '<button class="slab" data-act="echo" style="--tab:var(--note-E)"><b>Copy me</b><span>I play a few notes. You play them back.</span></button>';
+      h += '<button class="slab" data-act="chords" style="--tab:var(--note-G)"><b>Chords</b><span>Press a few keys together with your left hand.</span></button>';
+      h += '<button class="slab" data-act="songs" style="--tab:var(--note-A)"><b>Play a song</b><span>Follow the glowing key. Nothing to memorize.</span></button>';
+      h += '</div>';
+      if(!isNative) h += '<div class="actions"><button class="btn ghost" data-act="midi">' + (midiOn ? "Keyboard connected" : "Connect my keyboard") + '</button></div>';
+      h += '<p class="muted">' + (midiMsg || (isNative ? "Plug your piano keyboard into the USB port and it connects by itself. Turn the screen sideways for more keys." : "Turn your phone sideways for more keys. No sound? Turn off silent mode and turn the volume up.")) + '</p>';
+      h += '<p class="muted">\u00a9 2026 Gina Makes LLC</p>';
+    }
+
+    else if(S.view === "find"){
+      h += dots(S.total, S.round);
+      h += '<div class="ask">Find ' + big(S.target) + '</div>';
+      h += '<p class="hint">' + WHERE[S.target] + '</p>';
+      h += '<p class="msg">' + (S.msg || "") + '</p>';
+    }
+
+    else if(S.view === "echo"){
+      h += dots(S.total, S.round);
+      h += '<h2>Copy me</h2>';
+      h += '<div class="chips">';
+      for(var i = 0; i < S.shown; i++){
+        var c = S.busy ? (S.demoAt === i ? "now" : "done") : (i < S.pos ? "done" : (i === S.pos ? "now" : ""));
+        h += chip(S.seq[i], 1, c);
+      }
+      h += '</div>';
+      h += '<p class="msg">' + (S.msg || "") + '</p>';
+      h += '<div class="actions"><button class="btn ghost" data-act="echo-again"' + (S.busy ? " disabled" : "") + '>Show me again</button></div>';
+    }
+
+    else if(S.view === "chords"){
+      var ch = S.order[S.round];
+      h += dots(S.total, S.round);
+      h += '<div class="ask">' + ch + ' chord</div>';
+      h += '<p class="hint rowline">';
+      CHORDS[ch].forEach(function(n, k){ h += chip(n, 1, "sm") + '<span>' + CHORD_FINGERS[ch][k] + '</span>'; });
+      h += '</p>';
+      h += '<p class="muted">Tap each glowing key. On your piano, press them all together with your left hand.</p>';
+      h += '<p class="msg">' + (S.msg || "") + '</p>';
+    }
+
+    else if(S.view === "songs"){
+      h += '<h1>Pick a song.</h1>';
+      h += '<p class="muted">They go from easiest to hardest.</p>';
+      h += '<div class="slabs">';
+      SONGS.forEach(function(s, i){
+        var used = WHITE.filter(function(n){ return s.lines.some(function(l){ return l.some(function(x){ return x[0] === n; }); }); });
+        h += '<button class="slab" data-act="song" data-i="' + i + '" style="--tab:var(--note-' + used[used.length - 1] + ')">';
+        h += '<span class="row"><b>' + s.name + '</b>' + (save.songs[s.name] ? '<span class="done-mark">played</span>' : '') + '</span>';
+        h += '<span class="row">' + used.map(function(n){ return chip(n, 1, "sm"); }).join("") + '</span>';
+        h += '</button>';
+      });
+      h += '</div>';
+    }
+
+    else if(S.view === "song"){
+      var L = curLine(), song = SONGS[S.song], both = save.hands === "both";
+      h += dots(song.lines.length, S.line + (S.lineDone ? 1 : 0));
+      h += '<h2>' + song.name + '</h2>';
+      h += '<div class="chips">';
+      L.forEach(function(x, i){
+        var c = S.busy ? (S.demoAt === i ? "now" : (i < S.demoAt ? "done" : "")) : (i < S.pos ? "done" : (i === S.pos && !S.lineDone ? "now" : ""));
+        if(both) h += '<span class="cw">' + (x[2] ? '<span class="tag">' + x[2] + '</span>' : '') + chip(x[0], x[1], c) + '</span>';
+        else h += chip(x[0], x[1], c);
+      });
+      h += '</div>';
+      if(both){
+        var now = S.busy ? S.chordNow : chordAt(L, S.pos);
+        if(now){
+          h += '<p class="hint rowline"><span>Left hand holds the <b>' + now + ' chord</b></span>' + CHORDS[now].map(function(n){ return chip(n, 1, "sm"); }).join("") + '</p>';
+        }
+      }
+      if(!S.lineDone && !S.busy){
+        var n = L[S.pos][0];
+        h += '<div class="ask">Play ' + big(n) + '</div>';
+        if(save.hands === "left") h += '<p class="muted">Left hand, pinky resting on a lower C. Use your ' + FINGER_L[n] + '.</p>';
+        else h += '<p class="muted">Right hand, thumb resting on C. Use your ' + FINGER_R[n] + '.</p>';
+        if(both) h += '<p class="muted">A box above a note means the left-hand chord changes there. Turn your phone sideways to see the left-hand keys.</p>';
+      }
+      h += '<p class="msg">' + (S.msg || "") + '</p>';
+      h += '<div class="actions">';
+      var last = S.line >= song.lines.length - 1;
+      if(S.lineDone){
+        h += '<button class="btn" data-act="next-line">' + (last ? "Finish the song" : "Next line") + '</button>';
+        h += '<button class="btn ghost" data-act="line-again">Play this line again</button>';
+      } else if(S.along){
+        h += '<button class="btn" data-act="stop">Stop</button>';
+        h += '<button class="btn ghost" data-act="next-line">' + (last ? "Finish the song" : "Next line") + '</button>';
+      } else {
+        var dis = S.busy ? " disabled" : "";
+        h += '<button class="btn" data-act="along"' + dis + '>Play along on my piano</button>';
+        h += '<button class="btn ghost" data-act="hands"' + dis + '>Hands: ' + save.hands + '</button>';
+        h += '<button class="btn ghost" data-act="speed"' + dis + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
+        h += '<button class="btn ghost" data-act="hear"' + dis + '>Hear this line</button>';
+      }
+      h += '</div>';
+    }
+
+    else if(S.view === "done"){
+      h += '<h1>That is a full practice.</h1>';
+      h += '<p>' + (S.from === "song" ? "You played " + SONGS[S.song].name + " all the way through." : "Short and done counts.") + '</p>';
+      if(S.extra) h += '<p class="muted">' + S.extra + '</p>';
+      h += '<div class="actions">';
+      h += '<button class="btn" data-act="home">Stop here</button>';
+      h += '<button class="btn ghost" data-act="' + (S.from === "song" ? "songs" : S.from) + '">' + (S.from === "song" ? "Another song" : "Go again") + '</button>';
+      h += '</div>';
+    }
+
+    stage.innerHTML = h;
+
+    var t = targets(), hd = holds();
+    [-1, 0].forEach(function(o){
+      Object.keys(keyEls[o]).forEach(function(n){
+        var k = keyEls[o][n];
+        k.classList.toggle("target", t.some(function(x){ return x[0] === n && keyFor(n, x[1]) === k; }));
+        k.classList.toggle("hold", o === -1 && hd.indexOf(n) !== -1);
+      });
+    });
+    piano.classList.toggle("hide-labels", S.view === "find");
+  }
+
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-act]"); if(!b || b.disabled) return;
+    audio(); // unlock sound on the first tap
+    var a = b.dataset.act;
+    if(a === "home"){ ++run; S = {view:"home"}; render(); }
+    else if(a === "find") startFind();
+    else if(a === "echo") startEcho();
+    else if(a === "echo-again") showEcho();
+    else if(a === "chords") startChords();
+    else if(a === "midi") connectMidi();
+    else if(a === "songs"){ ++run; S = {view:"songs"}; render(); }
+    else if(a === "song") startSong(parseInt(b.dataset.i, 10));
+    else if(a === "hear") hearLine();
+    else if(a === "along") playAlong();
+    else if(a === "hands"){ save.hands = HANDS[(HANDS.indexOf(save.hands) + 1) % HANDS.length]; keep(); render(); }
+    else if(a === "speed"){ save.fast = !save.fast; keep(); render(); }
+    else if(a === "stop"){ ++run; S.along = false; S.busy = false; S.demoAt = -1; S.msg = ""; render(); }
+    else if(a === "line-again"){ S.pos = 0; S.lineDone = false; S.msg = ""; render(); }
+    else if(a === "next-line"){
+      var song = SONGS[S.song];
+      if(S.line >= song.lines.length - 1){ save.songs[song.name] = true; keep(); finish("song", ""); }
+      else { S.line++; S.pos = 0; S.lineDone = false; S.msg = ""; S.chordNow = null; render(); if(S.along) playAlong(); }
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
