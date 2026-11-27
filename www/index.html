@@ -75,6 +75,7 @@ p{margin:0}
 .chip.hi{border-top:5px solid var(--ivory)}
 .chip.lo{border-bottom:5px solid var(--ivory)}
 .chip.done{opacity:1}
+.chip.off{opacity:1;background:transparent;border:2px dashed var(--nc);color:var(--text)}
 .chip.now{opacity:1;box-shadow:0 0 0 3px var(--room),0 0 0 6px var(--ivory)}
 .chip.sm{height:28px;width:auto !important;min-width:28px;padding:0 5px;font-size:14px;opacity:1}
 .cw{display:inline-flex;flex-direction:column;gap:4px;padding-top:26px;position:relative}
@@ -127,6 +128,33 @@ p{margin:0}
 @media (orientation:landscape) and (min-width:1000px){
   .app{max-width:1400px}
   .bed{flex-basis:42%}
+}
+/* A phone held sideways is wide but very short: give the piano most of the height */
+@media (orientation:landscape) and (max-height:500px){
+  header{min-height:0;padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:0}
+  .brand{font-size:16px}
+  .home-btn{padding:1px 12px;font-size:14px}
+  #stage{gap:6px;padding-top:2px;padding-bottom:4px;font-size:15px}
+  h1{font-size:20px}
+  h2{font-size:16px}
+  .muted{font-size:14px}
+  .ask{font-size:20px;gap:8px}
+  .big{min-width:38px;height:38px;font-size:22px}
+  .msg{min-height:20px}
+  .hint{padding:6px 10px}
+  .slab{padding:6px 12px}
+  .slab b{font-size:17px}
+  .slab span{font-size:14px}
+  .rowbtn{padding:7px 12px}
+  .chip{height:32px;font-size:15px}
+  .btn{padding:6px 12px}
+  .bed{flex-basis:60%;min-height:0;position:relative;padding-bottom:calc(4px + env(safe-area-inset-bottom))}
+  .shift{position:absolute;left:calc(8px + env(safe-area-inset-left));right:calc(8px + env(safe-area-inset-right));top:-3px;pointer-events:none;z-index:3}
+  .shift button{pointer-events:auto;padding:0 10px;font-size:12px;margin:0;background:var(--room)}
+  .groups{height:18px}
+  .groups span{height:16px;line-height:12px;font-size:12px}
+  .label{width:26px;height:26px;font-size:15px}
+  .key.white{padding-bottom:6px}
 }
 @media (prefers-reduced-motion:reduce){
   .key.white.target{animation:none;box-shadow:inset 0 0 0 6px var(--ink)}
@@ -303,9 +331,19 @@ p{margin:0}
   mkScale("E minor", "E F# G A B C' D' E'", R1, L1);
   mkScale("D minor", "D E F G A Bb C' D'", R1, L1);
 
+  /* ================= rhythm practice (any key counts) ================= */
+  var RHYTHM = {};
+  function mkRhythm(name, lines){ RHYTHM[name] = {name:name, any:true, lines:lines.map(line), lo:0, hi:0}; }
+  mkRhythm("Tap with the pulse", ["G G G G G G G G", "G G G G G G G G"]);
+  mkRhythm("Long and short taps", ["G G G:2 G G G:2", "G:2 G G G:2 G G", "G G G G G:2 G:2"]);
+  mkRhythm("Quick taps", ["G G:.5 G:.5 G G:2", "G:.5 G:.5 G:.5 G:.5 G G", "G G:.5 G:.5 G:.5 G:.5 G:2"]);
+  mkRhythm("Held notes", ["G:4 G:2 G:2", "G:3 G G:4", "G:1.5 G:.5 G:1.5 G:.5 G:2 G:2"]);
+
   /* ================= the lesson path ================= */
   function sg(name, extra){ var o = {t:"song", song:name, title:name}; if(extra) Object.keys(extra).forEach(function(k){ o[k] = extra[k]; }); return o; }
   function sc(name){ return {t:"scale", scale:name, title:name + " scale"}; }
+  function rh(name, tip){ return {t:"rhythm", rhythm:name, title:name, time:true, tip:tip}; }
+  function st(name){ return sg(name, {time:true, hands:"right", title:name + ", in time"}); }
   var PATH = [
     {name:"First keys", about:"Find your way around the white keys.", lessons:[
       {t:"find", title:"Find C and F", pool:["C","F"]},
@@ -345,7 +383,13 @@ p{margin:0}
       {t:"read", title:"Read the whole bass staff", clef:"bass", pool:["C,","D,","E,","F,","G,","A,","B,","C"]},
       {t:"chords", title:"Chords: G, C and D sevenths", set:["G7","C7","D7"]},
       sc("A major"), sc("E major"),
-      sg("Prelude in C (opening)", {hands:"right"})]}
+      sg("Prelude in C (opening)", {hands:"right"})]},
+    {name:"Playing in time", about:"Keep a steady pulse.", lessons:[
+      rh("Tap with the pulse", "The pulse is a steady tick. Tap Play in time, then tap any key right on each tick."),
+      rh("Long and short taps", "A wide block gets one tap. Let it ring until the next block lights up."),
+      rh("Quick taps", "Narrow blocks come quicker. On the staff they are the notes with a little flag."),
+      rh("Held notes", "The widest blocks last the longest. On the staff they are the hollow notes."),
+      st("Hot Cross Buns"), st("Mary Had a Little Lamb"), st("Ode to Joy"), st("Jingle Bells")]}
   ];
   var LBY = {}, ORDER = [];
   PATH.forEach(function(lv, i){ lv.lessons.forEach(function(L, j){ L.id = "L" + i + "-" + j; L.level = lv.name; LBY[L.id] = L; ORDER.push(L); }); });
@@ -364,6 +408,7 @@ p{margin:0}
     }
   }catch(e){}
   function keep(){ try{ localStorage.setItem("quiet-keys", JSON.stringify(save)); }catch(e){} }
+  var TIME_FIRST = "L7-0"; // once this lesson is done, every song offers Play in time
   function nextLesson(){ for(var i = 0; i < ORDER.length; i++){ if(!save.done[ORDER[i].id]) return ORDER[i]; } return null; }
 
   /* ================= sound ================= */
@@ -386,6 +431,15 @@ p{margin:0}
     var g2 = c.createGain(); g2.gain.value = midi < 60 ? 0.5 : 0.18; g2.connect(g); // low notes need help on small speakers
     var o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = f * 2; o2.connect(g2);
     o1.start(t); o2.start(t); o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  function tick(){
+    var c = audio(); if(!c) return;
+    var t = c.currentTime, g = c.createGain();
+    g.gain.setValueAtTime(0.22, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    g.connect(c.destination);
+    var o = c.createOscillator(); o.type = "square"; o.frequency.value = 1100; o.connect(g);
+    o.start(t); o.stop(t + 0.07);
   }
   function playChord(id, dur){ CH[id].n.forEach(function(n){ tone(48 + n.pc, dur, 0.2); }); }
 
@@ -549,6 +603,7 @@ p{margin:0}
       if(L.staff) save.staff = true;
       keep(); startSong(SONG[L.song], L);
     }
+    else if(L.t === "rhythm"){ save.staff = true; keep(); startSong(RHYTHM[L.rhythm], L); }
     else if(L.t === "scale"){ if(save.hands === "both"){ save.hands = "right"; keep(); } startSong(SCALE[L.scale], L); }
   }
 
@@ -656,7 +711,7 @@ p{margin:0}
   function startSong(song, L){
     ++run;
     if(song.scale && save.hands === "both"){ save.hands = "right"; keep(); }
-    S = {view:"song", L:L || null, song:song, line:0, pos:0, lineDone:false, msg:"", busy:false, demoAt:-1, along:false, chordNow:null};
+    S = {view:"song", L:L || null, song:song, line:0, pos:0, lineDone:false, msg:"", busy:false, demoAt:-1, along:false, chordNow:null, timing:false, counting:false, marks:null};
     render();
   }
   function curLine(){ return S.song.lines[S.line]; }
@@ -665,7 +720,7 @@ p{margin:0}
     if(S.lineDone) return;
     var n = curLine()[S.pos].n, shift = songShift(), both = isBoth();
     var want = midiOf(n, shift);
-    if(ev.midi === want){
+    if(S.song.any || ev.midi === want){
       S.pos++; S.msg = "";
       if(S.pos >= curLine().length){ S.lineDone = true; S.msg = "You played the whole line."; }
       render();
@@ -687,8 +742,65 @@ p{margin:0}
       demo(curLine(), null, save.fast ? BEAT : BEAT * 1.8).then(function(ok){ if(ok && S.along){ S.busy = true; loop(); } });
     })();
   }
+  /* Play in time: four ticks count in, then each block lights up on the pulse and taps are checked against it */
+  async function playInTime(){
+    var L = curLine(), bt = (save.fast ? BEAT : BEAT * 1.8) * 1000, shift = songShift(), both = isBoth(), id = ++run;
+    S.pos = 0; S.lineDone = false; S.marks = L.map(function(){ return null; });
+    S.busy = true; S.timing = false; S.counting = true; S.count = 0; S.demoAt = -1; S.demoOct = null;
+    S.msg = "Listen to the ticks. Start when the first block lights up.";
+    render();
+    for(var k = 1; k <= 4; k++){
+      if(!await wait(k === 1 ? 400 : bt, id)) return;
+      S.count = k; tick(); render();
+    }
+    // The first block starts one pulse after the last count-in tick. Open the timing window
+    // a little before that, so a slightly early first tap counts like any other.
+    var t0 = performance.now() + bt, cum = 0;
+    S.expect = L.map(function(x){ var e = t0 + cum * bt; cum += x.b; return e; });
+    S.win = 0.42 * bt;
+    for(var b = 0; b < cum; b++){ (function(n){ setTimeout(function(){ if(run === id) tick(); }, bt + n * bt); })(b); }
+    if(!await wait(bt - S.win, id)) return;
+    S.busy = false; S.counting = false; S.timing = true; S.msg = "";
+    render();
+    if(!await wait(Math.max(0, t0 - performance.now()), id)) return;
+    for(var i = 0; i < L.length; i++){
+      S.demoAt = i; S.demoOct = L[i].n.oct + shift;
+      if(both && L[i].ch) S.chordNow = L[i].ch;
+      render();
+      if(!await wait(Math.max(0, S.expect[i] + L[i].b * bt - performance.now()), id)) return;
+    }
+    if(!await wait(S.win, id)) return; // let a slightly late last tap land
+    var on = 0;
+    S.marks = S.marks.map(function(m){ if(m === "on") on++; return m || "miss"; });
+    S.timing = false; S.demoAt = -1; S.demoOct = null; S.lineDone = true;
+    S.msg = on === L.length ? "Right with the pulse."
+          : on >= L.length * 0.6 ? "Mostly with the pulse. Solid blocks were on time. Dashed blocks were early, late or missed."
+          : "The pulse got away this time. That is normal. Try Speed: slow, or use Play along first.";
+    render();
+  }
+  function timedPress(ev){
+    // A tap belongs to the block whose start is nearest, and only inside that block's own
+    // window: never more than halfway to the neighbouring block, so quick notes do not steal taps.
+    var L = curLine(), now = performance.now(), best = -1, gap = 1e9;
+    for(var i = 0; i < L.length; i++){
+      var d = Math.abs(now - S.expect[i]);
+      if(d < gap){ gap = d; best = i; }
+    }
+    if(best < 0 || S.marks[best]) return;
+    var limit = S.win, off = now - S.expect[best];
+    if(off < 0 && best > 0) limit = Math.min(limit, (S.expect[best] - S.expect[best - 1]) / 2);
+    if(off > 0 && best < L.length - 1) limit = Math.min(limit, (S.expect[best + 1] - S.expect[best]) / 2);
+    if(gap > limit) return;
+    var n = L[best].n, shift = songShift(), want = midiOf(n, shift);
+    if(!S.song.any && ev.midi !== want){
+      if(isBoth() && ev.midi < want && (ev.oct < n.oct + shift || holds().indexOf(ev.key) !== -1)) return;
+      S.marks[best] = "key"; return;
+    }
+    S.marks[best] = "on";
+  }
   function fingerText(){
     var song = S.song, n = curLine()[S.pos].n, left = save.hands === "left";
+    if(song.any) return "Any key will do.";
     if(song.scale){
       var arr = (left ? song.fl : song.fr)[S.line], f = arr[S.pos], prev = S.pos > 0 ? arr[S.pos - 1] : null;
       var name = FINGER[f];
@@ -716,6 +828,7 @@ p{margin:0}
   function press(ev){
     if(ev.src !== "midi") tone(ev.midi, 1.2);
     flash(ev.key, ev.oct, 200);
+    if(S.view === "song" && S.timing){ timedPress(ev); return; }
     if(S.busy) return;
     if(S.view === "find") findPress(ev);
     else if(S.view === "echo") echoPress(ev);
@@ -723,17 +836,21 @@ p{margin:0}
     else if(S.view === "read") readPress(ev);
     else if(S.view === "song") songPress(ev);
   }
+  function stopAll(){ ++run; S.along = false; S.busy = false; S.timing = false; S.counting = false; S.demoAt = -1; S.demoOct = null; }
 
   /* ================= what glows ================= */
   function targets(){
     if(S.view === "find" || S.view === "read") return S.reveal ? [{key:S.target.key, oct:S.target.oct}] : [];
     if(S.view === "chords" && !S.busy) return CH[S.order[S.round]].n.filter(function(n){ return !S.got[n.key]; }).map(function(n){ return {key:n.key, oct:-1}; });
-    if(S.view === "song" && !S.busy && !S.lineDone){ var n = curLine()[S.pos].n; return [{key:n.key, oct:n.oct + songShift()}]; }
+    if(S.view === "song" && !S.song.any && !S.busy && !S.lineDone){
+      var n = curLine()[S.timing ? Math.max(0, S.demoAt) : S.pos].n;
+      return [{key:n.key, oct:n.oct + songShift()}];
+    }
     return [];
   }
   function holds(){
     if(!isBoth()) return [];
-    var ch = S.busy ? S.chordNow : chordAt(curLine(), S.pos);
+    var ch = (S.busy || S.timing) ? S.chordNow : chordAt(curLine(), S.pos);
     return ch ? CH[ch].n.map(function(n){ return n.key; }) : [];
   }
   function need(){
@@ -789,7 +906,7 @@ p{margin:0}
   }
   function chip(n, beats, cls, shift){
     var w = 14 + beats * 20, o = n.oct + (shift || 0);
-    return '<span class="chip ' + (cls || '') + (o > 0 ? ' hi' : o < 0 ? ' lo' : '') + '" style="--nc:var(--note-' + n.letter + ');width:' + w + 'px">' + show(n.name) + '</span>';
+    return '<span class="chip ' + (cls || '') + (o > 0 ? ' hi' : o < 0 ? ' lo' : '') + '" style="--nc:var(--note-' + n.letter + ');width:' + w + 'px">' + (S.song && S.song.any ? "\u2022" : show(n.name)) + '</span>';
   }
   function big(n){ return '<span class="big" style="--nc:var(--note-' + n.letter + ')">' + show(n.name) + '</span>'; }
   function tipLine(){ return (S.L && S.L.tip && S.round === 0) ? '<p class="muted">' + S.L.tip + '</p>' : ''; }
@@ -823,7 +940,7 @@ p{margin:0}
         });
         h += '</div></div>';
       });
-      h += '<p class="muted">More levels are being written: playing in time, two independent hands, and full pieces.</p>';
+      h += '<p class="muted">More levels are being written: two independent hands, full pieces, and advanced technique.</p>';
     }
 
     else if(S.view === "songs"){
@@ -881,9 +998,13 @@ p{margin:0}
       var L = curLine(), song = S.song, both = isBoth(), shift = songShift(), wideRange = song.hi > song.lo || song.lo + shift !== 0;
       h += dots(song.lines.length, S.line + (S.lineDone ? 1 : 0));
       h += '<h2>' + song.name + '</h2>';
+      var live = S.busy || S.timing;
       var states = L.map(function(x, i){
-        return S.busy ? (S.demoAt === i ? "now" : (i < S.demoAt ? "done" : "")) : (i < S.pos ? "done" : (i === S.pos && !S.lineDone ? "now" : ""));
+        if(S.marks && S.lineDone) return S.marks[i] === "on" ? "done" : "off";
+        return live ? (S.demoAt === i ? "now" : (i < S.demoAt ? "done" : "")) : (i < S.pos ? "done" : (i === S.pos && !S.lineDone ? "now" : ""));
       });
+      if(S.L && S.L.tip && S.line === 0 && S.pos === 0 && !live && !S.lineDone) h += '<p class="muted">' + S.L.tip + '</p>';
+      if(S.counting) h += dots(4, S.count);
       if(save.staff) h += staff(L.map(function(x, i){ return {n:x.n, b:x.b, st:states[i], shift:shift}; }), shift < 0 ? "bass" : "treble", false);
       h += '<div class="chips">';
       L.forEach(function(x, i){
@@ -892,18 +1013,21 @@ p{margin:0}
       });
       h += '</div>';
       if(both){
-        var now = S.busy ? S.chordNow : chordAt(L, S.pos);
+        var now = live ? S.chordNow : chordAt(L, S.pos);
         if(now) h += '<p class="hint rowline"><span>Left hand holds the <b>' + CH[now].say + ' chord</b></span>' + CH[now].n.map(function(n){ return chip(n, 1, "sm"); }).join("") + '</p>';
       }
-      if(!S.lineDone && !S.busy){
+      if(!S.lineDone && !live){
         var n = L[S.pos].n;
-        h += '<div class="ask">Play ' + big(n) + '</div>';
+        h += song.any ? '<div class="ask">Tap any key</div>' : '<div class="ask">Play ' + big(n) + '</div>';
         h += '<p class="muted">' + fingerText() + (wideRange ? ' A bar on top of a block means the higher keys. A bar underneath means the lower keys.' : '') + '</p>';
       }
       h += '<p class="msg">' + (S.msg || "") + '</p>';
       h += '<div class="actions">';
-      var last = S.line >= song.lines.length - 1, endWord = song.scale ? "Finish the scale" : "Finish the song";
-      if(S.lineDone){
+      var last = S.line >= song.lines.length - 1, endWord = song.scale ? "Finish the scale" : song.any ? "Finish" : "Finish the song";
+      var timeLesson = !!(song.any || (S.L && S.L.time)), offerTime = timeLesson || !!save.done[TIME_FIRST];
+      if(S.timing || S.counting){
+        h += '<button class="btn" data-act="stop">Stop</button>';
+      } else if(S.lineDone){
         h += '<button class="btn" data-act="next-line">' + (last ? endWord : "Next line") + '</button>';
         h += '<button class="btn ghost" data-act="line-again">Play this line again</button>';
       } else if(S.along){
@@ -911,7 +1035,9 @@ p{margin:0}
         h += '<button class="btn ghost" data-act="next-line">' + (last ? endWord : "Next line") + '</button>';
       } else {
         var dis = S.busy ? " disabled" : "";
-        h += '<button class="btn" data-act="along"' + dis + '>Play along on my piano</button>';
+        if(timeLesson) h += '<button class="btn" data-act="time"' + dis + '>Play in time</button>';
+        h += '<button class="btn' + (timeLesson ? ' ghost' : '') + '" data-act="along"' + dis + '>Play along on my piano</button>';
+        if(offerTime && !timeLesson) h += '<button class="btn ghost" data-act="time"' + dis + '>Play in time</button>';
         h += '<button class="btn ghost" data-act="hands"' + dis + '>Hands: ' + save.hands + '</button>';
         h += '<button class="btn ghost" data-act="speed"' + dis + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
         h += '<button class="btn ghost" data-act="staff"' + dis + '>Staff: ' + (save.staff ? "on" : "off") + '</button>';
@@ -963,17 +1089,18 @@ p{margin:0}
     else if(a === "win-up"){ winManual = Math.min(1, winStart + 1); render(); }
     else if(a === "hear") hearLine();
     else if(a === "along") playAlong();
+    else if(a === "time") playInTime();
     else if(a === "hands"){
       var opts = S.song.scale ? ["right","left"] : HANDS;
       save.hands = opts[(opts.indexOf(save.hands) + 1) % opts.length]; keep(); render();
     }
     else if(a === "speed"){ save.fast = !save.fast; keep(); render(); }
     else if(a === "staff"){ save.staff = !save.staff; keep(); render(); }
-    else if(a === "stop"){ ++run; S.along = false; S.busy = false; S.demoAt = -1; S.demoOct = null; S.msg = ""; render(); }
-    else if(a === "line-again"){ S.pos = 0; S.lineDone = false; S.msg = ""; render(); }
+    else if(a === "stop"){ stopAll(); S.marks = null; S.pos = 0; S.msg = ""; render(); }
+    else if(a === "line-again"){ S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; render(); }
     else if(a === "next-line"){
       if(S.line >= S.song.lines.length - 1) finish();
-      else { S.line++; S.pos = 0; S.lineDone = false; S.msg = ""; S.chordNow = null; render(); if(S.along) playAlong(); }
+      else { S.line++; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; S.chordNow = null; render(); if(S.along) playAlong(); }
     }
   });
 
