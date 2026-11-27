@@ -471,7 +471,7 @@ p{margin:0}
   PATH.forEach(function(lv, i){ lv.lessons.forEach(function(L, j){ L.id = "L" + i + "-" + j; L.level = lv.name; LBY[L.id] = L; ORDER.push(L); }); });
 
   /* ================= saved choices (this device only) ================= */
-  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false};
+  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false, auto:true};
   try{
     var raw = localStorage.getItem("quiet-keys");
     if(raw){
@@ -480,6 +480,7 @@ p{margin:0}
         save.done = o.done || {}; save.songs = o.songs || {};
         if(HANDS.indexOf(o.hands) !== -1) save.hands = o.hands;
         save.fast = !!o.fast; save.staff = !!o.staff;
+        if(o.auto === false) save.auto = false;
       }
     }
   }catch(e){}
@@ -801,13 +802,22 @@ p{margin:0}
     var want = midiOf(n, shift);
     if(S.song.any || ev.midi === want){
       S.pos++; S.msg = "";
-      if(S.pos >= curLine().length){ S.lineDone = true; S.msg = "You played the whole line."; }
+      if(S.pos >= curLine().length){
+        S.lineDone = true; S.msg = "You played the whole line.";
+        if(save.auto){ render(); later(800, nextLine); return; }
+      }
       render();
     } else {
       // In both-hands mode the left hand is busy with its chord: stay quiet about those keys only.
       if(both && ev.midi < want && (ev.oct < n.oct + shift || holds().indexOf(ev.key) !== -1)) return;
       S.msg = (ev.key === n.key ? offBy(ev, want) : oops(ev)) + " Look for the glowing key."; render();
     }
+  }
+  function nextLine(){
+    ++run;
+    if(S.line >= S.song.lines.length - 1){ finish(); return; }
+    S.line++; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; S.chordNow = null; render();
+    if(S.along) playAlong();
   }
   function hearLine(){
     var keepPos = S.pos, keepDone = S.lineDone;
@@ -912,9 +922,19 @@ p{margin:0}
     S.got[ev.midi] = true; S.msg = "";
     if(step.notes.every(function(x){ return S.got[midiOf(x.n)]; })){
       S.pos++; S.got = {};
-      if(S.pos >= dLine().steps.length){ S.lineDone = true; S.msg = "You played the whole line."; }
+      if(S.pos >= dLine().steps.length){
+        S.lineDone = true; S.msg = "You played the whole line.";
+        if(save.auto){ render(); later(800, duetNext); return; }
+      }
     }
     render();
+  }
+  function duetNext(){
+    var wasAlong = S.along;
+    ++run;
+    if(S.line >= S.piece.lines.length - 1){ finish(); return; }
+    S.line++; S.pos = 0; S.got = {}; S.lineDone = false; S.busy = false; S.along = false; S.demoAt = -1; S.msg = ""; render();
+    if(wasAlong) duetDemo(true);
   }
   async function duetDemo(loop){
     var steps = dLine().steps, bt = (loop ? (save.fast ? BEAT : BEAT * 1.8) : BEAT), id = ++run;
@@ -1183,6 +1203,7 @@ p{margin:0}
         h += '<button class="btn ghost" data-act="hands"' + dis + '>Hands: ' + save.hands + '</button>';
         h += '<button class="btn ghost" data-act="speed"' + dis + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
         h += '<button class="btn ghost" data-act="staff"' + dis + '>Staff: ' + (save.staff ? "on" : "off") + '</button>';
+        h += '<button class="btn ghost" data-act="auto"' + dis + '>Auto next line: ' + (save.auto ? "on" : "off") + '</button>';
         h += '<button class="btn ghost" data-act="hear"' + dis + '>Hear this line</button>';
       }
       h += '</div>';
@@ -1224,6 +1245,7 @@ p{margin:0}
         h += '<button class="btn" data-act="d-along"' + dd + '>Play along on my piano</button>';
         h += '<button class="btn ghost" data-act="speed"' + dd + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
         h += '<button class="btn ghost" data-act="staff"' + dd + '>Staff: ' + (save.staff ? "on" : "off") + '</button>';
+        h += '<button class="btn ghost" data-act="auto"' + dd + '>Auto next line: ' + (save.auto ? "on" : "off") + '</button>';
         h += '<button class="btn ghost" data-act="d-hear"' + dd + '>Hear this line</button>';
       }
       h += '</div>';
@@ -1277,12 +1299,8 @@ p{margin:0}
     else if(a === "d-hear") duetDemo(false);
     else if(a === "d-along") duetDemo(true);
     else if(a === "d-stop"){ ++run; S.along = false; S.busy = false; S.demoAt = -1; S.pos = 0; S.got = {}; S.lineDone = false; S.msg = ""; render(); }
-    else if(a === "d-again"){ S.pos = 0; S.got = {}; S.lineDone = false; S.msg = ""; render(); }
-    else if(a === "d-next"){
-      var wasAlong = S.along;
-      if(S.line >= S.piece.lines.length - 1) finish();
-      else { ++run; S.line++; S.pos = 0; S.got = {}; S.lineDone = false; S.busy = false; S.along = false; S.demoAt = -1; S.msg = ""; render(); if(wasAlong) duetDemo(true); }
-    }
+    else if(a === "d-again"){ ++run; S.pos = 0; S.got = {}; S.lineDone = false; S.msg = ""; render(); }
+    else if(a === "d-next") duetNext();
     else if(a === "hear") hearLine();
     else if(a === "along") playAlong();
     else if(a === "time") playInTime();
@@ -1293,11 +1311,9 @@ p{margin:0}
     else if(a === "speed"){ save.fast = !save.fast; keep(); render(); }
     else if(a === "staff"){ save.staff = !save.staff; keep(); render(); }
     else if(a === "stop"){ stopAll(); S.marks = null; S.pos = 0; S.msg = ""; render(); }
-    else if(a === "line-again"){ S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; render(); }
-    else if(a === "next-line"){
-      if(S.line >= S.song.lines.length - 1) finish();
-      else { S.line++; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; S.chordNow = null; render(); if(S.along) playAlong(); }
-    }
+    else if(a === "line-again"){ ++run; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; render(); }
+    else if(a === "next-line") nextLine();
+    else if(a === "auto"){ save.auto = !save.auto; keep(); render(); }
   });
 
   window.__qk = {state:function(){ return S; }}; // used by the automated lesson check
