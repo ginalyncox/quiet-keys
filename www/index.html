@@ -753,12 +753,16 @@ p{margin:0}
       if(!await wait(k === 1 ? 400 : bt, id)) return;
       S.count = k; tick(); render();
     }
-    if(!await wait(bt, id)) return;
-    var t0 = performance.now(), cum = 0;
+    // The first block starts one pulse after the last count-in tick. Open the timing window
+    // a little before that, so a slightly early first tap counts like any other.
+    var t0 = performance.now() + bt, cum = 0;
     S.expect = L.map(function(x){ var e = t0 + cum * bt; cum += x.b; return e; });
     S.win = 0.42 * bt;
-    for(var b = 0; b < cum; b++){ (function(n){ setTimeout(function(){ if(run === id) tick(); }, n * bt); })(b); }
+    for(var b = 0; b < cum; b++){ (function(n){ setTimeout(function(){ if(run === id) tick(); }, bt + n * bt); })(b); }
+    if(!await wait(bt - S.win, id)) return;
     S.busy = false; S.counting = false; S.timing = true; S.msg = "";
+    render();
+    if(!await wait(Math.max(0, t0 - performance.now()), id)) return;
     for(var i = 0; i < L.length; i++){
       S.demoAt = i; S.demoOct = L[i].n.oct + shift;
       if(both && L[i].ch) S.chordNow = L[i].ch;
