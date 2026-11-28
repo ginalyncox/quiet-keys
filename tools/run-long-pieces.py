@@ -24,6 +24,7 @@ with sync_playwright() as p:
             open_piece(pg, name)
             ln=pg.evaluate("() => window.__qk.state().line"); out.append(('resume line', ln, 'note' if pg.query_selector('[data-act=top]') else 'NO NOTE')); assert ln==5
             pg.click('[data-act=top]'); assert pg.evaluate("() => window.__qk.state().line")==0
+            pg.evaluate("() => document.getElementById('homeBtn').click()"); open_piece(pg, name); assert pg.evaluate("() => window.__qk.state().line")==0, 'start from the top must be remembered'
             # play all the way through
             for i in range(9000):
                 if pg.evaluate("() => window.__qk.state().view")=='done': break

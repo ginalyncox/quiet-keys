@@ -1514,7 +1514,7 @@ p{margin:0}
     if(a === "home" || a === "lessons" || a === "songs" || a === "lesson" || a === "song" || a === "duet-open") today = null; // leaving a Today session is always allowed
     if(a === "home"){ ++run; S = {view:"home"}; render(); }
     else if(a === "today") startToday();
-    else if(a === "top"){ fromTop = true; if(S.piece) startDuet(S.piece, null); else startSong(S.song, null); }
+    else if(a === "top"){ fromTop = true; delete save.at[(S.piece || S.song).name]; keep(); if(S.piece) startDuet(S.piece, null); else startSong(S.song, null); }
     else if(a === "today-next") runStep();
     else if(a === "lessons"){ ++run; S = {view:"lessons"}; render(); }
     else if(a === "songs"){ ++run; S = {view:"songs"}; render(); }
