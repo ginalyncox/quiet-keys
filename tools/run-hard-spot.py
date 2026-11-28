@@ -54,8 +54,17 @@ with sync_playwright() as p:
         lanes=pg.evaluate("() => [...document.querySelectorAll('.duet .lane')].map(l => l.querySelectorAll('.chip').length)"); out.append(('right alone lanes',lanes)); assert lanes[0]>0 and lanes[1]==0
         hands=[]
         for k in range(4):
-            st=pg.evaluate(ST)['spot']; hands.append(st['hand']); 
-            tg=pg.evaluate("() => document.querySelectorAll('.key.target').length"); 
+            st=pg.evaluate(ST)['spot']; hands.append(st['hand'])
+            if k==0:                     # the pause after a round: words, round dots and notes still show the round just played
+                for i in range(3000):
+                    q=pg.evaluate(ST)
+                    if q['done']: break
+                    if not q['busy']: pg.evaluate(PRESS)
+                    pg.wait_for_timeout(8)
+                q=pg.evaluate(ST); lanes=pg.evaluate("() => [...document.querySelectorAll('.duet .lane')].map(l => l.querySelectorAll('.chip').length)")
+                full=pg.evaluate("() => [...document.querySelectorAll('#stage .dots')].map(d => d.querySelectorAll('.dot.full').length)")
+                out.append(('pause',q['spot'],lanes,full)); assert q['done'] and q['spot']['hand']=='r' and lanes[1]==0 and full==[0,1], (q,lanes,full)
+                s=ready(pg); continue
             s=one_pass(pg)
         out.append(('duet end',s,hands)); assert hands==['r','l',None,None] and s['spot'] is None and s['line']==0 and s['done']
         assert pg.query_selector('[data-act=d-next]')

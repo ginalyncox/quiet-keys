@@ -1357,13 +1357,13 @@ p{margin:0}
       later(1200, function(){ if(S.spot) spotRound(false); });
       return;
     }
-    sp.at++;
-    if(sp.at >= sp.stages.length){
+    if(sp.at + 1 >= sp.stages.length){
       S.spot = null; S.lineDone = true; S.got = {};
       S.msg = "This spot is smoother now."; render(); return;
     }
+    // The finished round stays on screen during the short pause; the next round's words and notes arrive together.
     S.msg = "That round is done. Next round."; render();
-    later(1200, function(){ if(S.spot) spotRound(true); });
+    later(1200, function(){ if(S.spot){ S.spot.at++; spotRound(true); } });
   }
   function leaveSpot(){
     ++run; S.spot = null;
@@ -1371,7 +1371,7 @@ p{margin:0}
   }
   function spotHead(){
     if(!S.spot) return "";
-    return '<p class="hint"><b>Fixing a hard spot.</b> ' + spotStage().say + '</p>' + dots(S.spot.stages.length, S.spot.at);
+    return '<p class="hint"><b>Fixing a hard spot.</b> ' + spotStage().say + '</p>' + dots(S.spot.stages.length, S.spot.at + (S.lineDone && !S.spot.slip ? 1 : 0));
   }
   function spotButtons(){
     return (S.busy || S.lineDone ? '' : '<button class="btn" data-act="spot-hear">Hear it again</button>') + '<button class="btn ghost" data-act="spot-off">Leave the hard spot</button>';
@@ -1598,7 +1598,7 @@ p{margin:0}
 
     else if(S.view === "song"){
       var L = curLine(), song = S.song, both = isBoth(), shift = songShift(), wideRange = song.hi > song.lo || song.lo + shift !== 0;
-      h += dots(song.lines.length, S.line + (S.lineDone ? 1 : 0));
+      h += dots(song.lines.length, S.line + (S.lineDone && !S.spot ? 1 : 0));
       h += '<h2>' + song.name + '</h2>';
       h += S.spot ? spotHead() : resumeNote();
       var live = S.busy || S.timing;
@@ -1661,7 +1661,7 @@ p{margin:0}
         if(cur < 0 || x.step > cur) return "";
         return (x.step === cur || x.t + x.b > curT) ? "now" : "done";
       };
-      h += dots(piece.lines.length, S.line + (S.lineDone ? 1 : 0));
+      h += dots(piece.lines.length, S.line + (S.lineDone && !S.spot ? 1 : 0));
       h += '<h2>' + piece.name + '</h2>';
       h += S.spot ? spotHead() : resumeNote();
       if(S.L && S.L.tip && S.line === 0 && S.pos === 0 && !S.busy && !S.lineDone) h += '<p class="muted">' + S.L.tip + '</p>';
