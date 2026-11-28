@@ -395,7 +395,55 @@ p{margin:0}
       "D'@G G:.5 F#:.5 G E'@C G:.5 F#:.5 G",
       "D'@G C' B A:.5@D G:.5 F#:.5 G:.5 A",
       "D:.5@D E:.5 F#:.5 G:.5 A:.5 B:.5 C'@Em B A@D",
-      "B:.5@G D':.5 G F#@D G:3@G"]}
+      "B:.5@G D':.5 G F#@D G:3@G"]},
+    /* Whole song, both halves. Notes from the Mutopia Project hymn-tune edition (public domain, typeset by Steve Dunlop), moved from E minor to A minor. Chords are our own. */
+    {name:"Greensleeves (whole song)", lines:[
+      "A@Am C':2 D' E':1.5 F':.5 E' D':2@G B G:1.5 A:.5 B",
+      "C':2@Am A A:1.5 G#:.5 A B:3@E E:2",
+      "A@Am C':2 D' E':1.5 F':.5 E' D':2@G B G:1.5 A:.5 B",
+      "C':1.5@Am B:.5 A G#:1.5@E F#:.5 G# A:3@Am A:3",
+      "G':3@C G':1.5 F#':.5 E' D':2@G B G:1.5 A:.5 B",
+      "C':2@Am A A:1.5 G#:.5 A B:2@E G# E:3",
+      "G':3@C G':1.5 F':.5 E' D':2@G B G:1.5 A:.5 B",
+      "C':1.5@Am B:.5 A G#:1.5@E F#:.5 G# A:3@Am A:3"]},
+    /* Whole piece, one bar per line. Notes from the Mutopia Project edition (public domain, typeset by Tobias Erbsland).
+       Both hands are written as one line, the way the piece sounds. Bass notes below the app's lowest key are raised an octave. */
+    {name:"Prelude in C (whole piece)", lines:[
+      quick("C E G C' E' G C' E' C E G C' E' G C' E'"),
+      quick("C D A D' F' A D' F' C D A D' F' A D' F'"),
+      quick("B, D G D' F' G D' F' B, D G D' F' G D' F'"),
+      quick("C E G C' E' G C' E' C E G C' E' G C' E'"),
+      quick("C E A E' A' A E' A' C E A E' A' A E' A'"),
+      quick("C D F# A D' F# A D' C D F# A D' F# A D'"),
+      quick("B, D G D' G' G D' G' B, D G D' G' G D' G'"),
+      quick("B, C E G C' E G C' B, C E G C' E G C'"),
+      quick("A, C E G C' E G C' A, C E G C' E G C'"),
+      quick("D, A, D F# C' D F# C' D, A, D F# C' D F# C'"),
+      quick("G, B, D G B D G B G, B, D G B D G B"),
+      quick("G, Bb, E G C#' E G C#' G, Bb, E G C#' E G C#'"),
+      quick("F, A, D A D' D A D' F, A, D A D' D A D'"),
+      quick("F, Ab, D F B D F B F, Ab, D F B D F B"),
+      quick("E, G, C G C' C G C' E, G, C G C' C G C'"),
+      quick("E, F, A, C F A, C F E, F, A, C F A, C F"),
+      quick("D, F, A, C F A, C F D, F, A, C F A, C F"),
+      quick("G, D, G, B, F G, B, F G, D, G, B, F G, B, F"),
+      quick("C, E, G, C E G, C E C, E, G, C E G, C E"),
+      quick("C, G, Bb, C E Bb, C E C, G, Bb, C E Bb, C E"),
+      quick("F, F, A, C E A, C E F, F, A, C E A, C E"),
+      quick("F#, C, A, C Eb A, C Eb F#, C, A, C Eb A, C Eb"),
+      quick("Ab, F, B, C D B, C D Ab, F, B, C D B, C D"),
+      quick("G, F, G, B, D G, B, D G, F, G, B, D G, B, D"),
+      quick("G, E, G, C E G, C E G, E, G, C E G, C E"),
+      quick("G, D, G, C F G, C F G, D, G, C F G, C F"),
+      quick("G, D, G, B, F G, B, F G, D, G, B, F G, B, F"),
+      quick("G, Eb, A, C F# A, C F# G, Eb, A, C F# A, C F#"),
+      quick("G, E, G, C G G, C G G, E, G, C G G, C G"),
+      quick("G, D, G, C F G, C F G, D, G, C F G, C F"),
+      quick("G, D, G, B, F G, B, F G, D, G, B, F G, B, F"),
+      quick("C, C, G, Bb, E G, Bb, E C, C, G, Bb, E G, Bb, E"),
+      quick("C, C, F, A, C F C A, C A, F, A, F, D, F, D,"),
+      quick("C, B, G B D' F' D' B D' B G B D F E D"),
+      "C,:.5 E:.5 G:.5 C':4"]}
   ];
   /* Song book shelves, each from easier to harder */
   var SHELVES = [
@@ -405,7 +453,7 @@ p{margin:0}
     ["Classical", ["Ode to Joy", "Largo from the New World Symphony", "Morning Mood (theme)", "Spring from The Four Seasons (theme)", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Swan Lake (theme)", "Minuet in G (opening)", "Eine kleine Nachtmusik (opening)", "In the Hall of the Mountain King (theme)", "F\u00fcr Elise (opening)", "Prelude in C (opening)"]],
     ["Slow and dreamy", ["Largo from the New World Symphony", "Silent Night", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Carol of the Bells", "Moonlight Sonata (opening)"]],
     ["Two hands", ["Ode to Joy, two hands", "Mary Had a Little Lamb, two hands", "Twinkle Twinkle, two hands", "Minuet in G, two hands (opening)", "Moonlight Sonata (opening)"]],
-    ["Longer pieces", ["Minuet in G (whole piece)", "Minuet in G, whole piece (two hands)"]]
+    ["Longer pieces", ["Greensleeves (whole song)", "Minuet in G (whole piece)", "Prelude in C (whole piece)", "Minuet in G, whole piece (two hands)"]]
   ];
   var SONG = {};
   SONG_LIST.forEach(function(s){
