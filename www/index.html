@@ -1144,12 +1144,14 @@ p{margin:0}
       S.pos++; S.msg = "";
       if(S.pos >= curLine().length){
         S.lineDone = true; S.msg = "You played the whole line.";
+        if(S.spot){ spotPass(); return; }
         if(save.auto){ render(); later(800, nextLine); return; }
       }
       render();
     } else {
       // In both-hands mode the left hand is busy with its chord: stay quiet about those keys only.
       if(both && ev.midi < want && (ev.oct < n.oct + shift || holds().indexOf(ev.key) !== -1)) return;
+      if(S.spot) S.spot.slip = true;
       S.msg = (ev.key === n.key ? offBy(ev, want) : oops(ev)) + " Look for the glowing key."; render();
     }
   }
@@ -1251,13 +1253,14 @@ p{margin:0}
     S = {view:"duet", L:L || null, piece:piece, line:from, resumed:from, pos:0, got:{}, lineDone:false, msg:"", busy:false, demoAt:-1, along:false};
     render();
   }
-  function dLine(){ return S.piece.lines[S.line]; }
+  function dLine(){ return (S.spot && S.spot.line) || S.piece.lines[S.line]; }
   function duetPress(ev){
     if(S.lineDone) return;
     var step = dLine().steps[S.pos];
     var hit = step.notes.filter(function(x){ return midiOf(x.n) === ev.midi; })[0];
     if(!hit){
       var same = step.notes.filter(function(x){ return x.n.key === ev.key; })[0];
+      if(S.spot) S.spot.slip = true;
       S.msg = (same ? offBy(ev, midiOf(same.n)) : oops(ev)) + " Look for the glowing key" + (step.notes.length > 1 ? "s." : "."); render(); return;
     }
     S.got[ev.midi] = true; S.msg = "";
@@ -1265,6 +1268,7 @@ p{margin:0}
       S.pos++; S.got = {};
       if(S.pos >= dLine().steps.length){
         S.lineDone = true; S.msg = "You played the whole line.";
+        if(S.spot){ spotPass(); return; }
         if(save.auto){ render(); later(800, duetNext); return; }
       }
     }
@@ -1278,10 +1282,10 @@ p{margin:0}
     if(wasAlong) duetDemo(true);
   }
   async function duetDemo(loop){
-    var steps = dLine().steps, bt = (loop ? (save.fast ? BEAT : BEAT * 1.8) : BEAT), id = ++run;
+    var steps = dLine().steps, bt = S.spot ? BEAT * spotStage().k : (loop ? (save.fast ? BEAT : BEAT * 1.8) : BEAT), id = ++run;
     var keepPos = S.pos, keepDone = S.lineDone;
     S.busy = true; S.along = !!loop; S.demoAt = -1;
-    S.msg = loop ? "Play each key on your piano as it glows. The line repeats until you stop." : "Listen. Wider blocks last longer.";
+    S.msg = loop ? "Play each key on your piano as it glows. The line repeats until you stop." : S.spot ? "Listen first. Then it is your turn." : "Listen. Wider blocks last longer.";
     render();
     if(!await wait(500, id)) return;
     do {
@@ -1296,6 +1300,81 @@ p{margin:0}
       }
     } while(loop && S.along);
     S.busy = false; S.along = false; S.demoAt = -1; S.pos = keepPos; S.lineDone = keepDone; S.msg = ""; render();
+  }
+
+  /* ---- fix a hard spot: one line on a loop, one hand at a time, a little quicker each round ---- */
+  function handLine(ln, hand){ // the same line with only one hand's notes
+    var src = hand === "r" ? ln.r : ln.l, at = {};
+    var v = src.map(function(x){ return {n:x.n, b:x.b, t:x.t, hand:x.hand, rest:x.rest}; });
+    v.forEach(function(x){ if(!x.rest) (at[x.t] = at[x.t] || []).push(x); });
+    var times = Object.keys(at).map(parseFloat).sort(function(a, b){ return a - b; });
+    var steps = times.map(function(t, i){
+      at[t].forEach(function(x){ x.step = i; });
+      return {t:t, notes:at[t], len:(i + 1 < times.length ? times[i + 1] : ln.total) - t};
+    });
+    return {r:hand === "r" ? v : [], l:hand === "l" ? v : [], steps:steps, total:ln.total, quick:ln.quick};
+  }
+  function spotStages(){
+    if(S.view === "duet"){
+      var ln = S.piece.lines[S.line], st = [];
+      var has = function(v){ return v.some(function(x){ return !x.rest; }); };
+      if(has(ln.r) && has(ln.l)){
+        st.push({say:"Right hand alone, slowly.", hand:"r", k:2.4});
+        st.push({say:"Left hand alone, slowly.", hand:"l", k:2.4});
+        st.push({say:"Both hands, slowly.", k:2.4});
+        st.push({say:"Both hands, a little quicker.", k:1.7});
+      } else {
+        st.push({say:"Slowly.", k:2.4});
+        st.push({say:"A little quicker.", k:1.7});
+      }
+      return st;
+    }
+    return [{say:"Slowly.", k:2.4}, {say:"A little quicker.", k:1.7}, {say:"At a steady pace.", k:1.2}];
+  }
+  function spotStage(){ return S.spot.stages[S.spot.at]; }
+  function startSpot(){
+    stopAll();
+    S.spot = {stages:spotStages(), at:0, slip:false, line:null};
+    spotRound(true);
+  }
+  function spotRound(listen){
+    var sp = S.spot, stg = spotStage();
+    ++run;
+    S.pos = 0; S.got = {}; S.lineDone = false; S.marks = null; S.along = false; S.busy = false; S.demoAt = -1; S.msg = "";
+    sp.slip = false;
+    sp.line = (S.view === "duet" && stg.hand) ? handLine(S.piece.lines[S.line], stg.hand) : null;
+    if(!listen){ render(); return; }
+    if(S.view === "duet") duetDemo(false);
+    else {
+      S.msg = "Listen first. Then it is your turn.";
+      demo(curLine(), null, BEAT * stg.k).then(function(ok){ if(ok && S.spot){ S.pos = 0; S.lineDone = false; S.msg = ""; render(); } });
+    }
+  }
+  function spotPass(){ // the line was just played through in hard-spot mode
+    var sp = S.spot;
+    if(sp.slip){
+      S.msg = "Almost. Once more at this pace."; render();
+      later(1200, function(){ if(S.spot) spotRound(false); });
+      return;
+    }
+    if(sp.at + 1 >= sp.stages.length){
+      S.spot = null; S.lineDone = true; S.got = {};
+      S.msg = "This spot is smoother now."; render(); return;
+    }
+    // The finished round stays on screen during the short pause; the next round's words and notes arrive together.
+    S.msg = "That round is done. Next round."; render();
+    later(1200, function(){ if(S.spot){ S.spot.at++; spotRound(true); } });
+  }
+  function leaveSpot(){
+    ++run; S.spot = null;
+    S.pos = 0; S.got = {}; S.lineDone = false; S.busy = false; S.along = false; S.demoAt = -1; S.demoOct = null; S.marks = null; S.msg = ""; render();
+  }
+  function spotHead(){
+    if(!S.spot) return "";
+    return '<p class="hint"><b>Fixing a hard spot.</b> ' + spotStage().say + '</p>' + dots(S.spot.stages.length, S.spot.at + (S.lineDone && !S.spot.slip ? 1 : 0));
+  }
+  function spotButtons(){
+    return (S.busy || S.lineDone ? '' : '<button class="btn" data-act="spot-hear">Hear it again</button>') + '<button class="btn ghost" data-act="spot-off">Leave the hard spot</button>';
   }
 
   /* ---- finishing ---- */
@@ -1519,9 +1598,9 @@ p{margin:0}
 
     else if(S.view === "song"){
       var L = curLine(), song = S.song, both = isBoth(), shift = songShift(), wideRange = song.hi > song.lo || song.lo + shift !== 0;
-      h += dots(song.lines.length, S.line + (S.lineDone ? 1 : 0));
+      h += dots(song.lines.length, S.line + (S.lineDone && !S.spot ? 1 : 0));
       h += '<h2>' + song.name + '</h2>';
-      h += resumeNote();
+      h += S.spot ? spotHead() : resumeNote();
       var live = S.busy || S.timing;
       var states = L.map(function(x, i){
         if(S.marks && S.lineDone) return S.marks[i] === "on" ? "done" : "off";
@@ -1549,7 +1628,9 @@ p{margin:0}
       h += '<div class="actions">';
       var last = S.line >= song.lines.length - 1, endWord = song.scale ? "Finish the scale" : song.any ? "Finish" : "Finish the song";
       var timeLesson = !!(song.any || (S.L && S.L.time)), offerTime = timeLesson || !!save.done[TIME_FIRST];
-      if(S.timing || S.counting){
+      if(S.spot){
+        h += spotButtons();
+      } else if(S.timing || S.counting){
         h += '<button class="btn" data-act="stop">Stop</button>';
       } else if(S.lineDone){
         h += '<button class="btn" data-act="next-line">' + (last ? endWord : "Next line") + '</button>';
@@ -1561,6 +1642,7 @@ p{margin:0}
         var dis = S.busy ? " disabled" : "";
         if(timeLesson) h += '<button class="btn" data-act="time"' + dis + '>Play in time</button>';
         h += '<button class="btn' + (timeLesson ? ' ghost' : '') + '" data-act="along"' + dis + '>Play along on my piano</button>';
+        if(!song.any) h += '<button class="btn ghost" data-act="spot"' + dis + '>Fix this hard spot</button>';
         if(offerTime && !timeLesson) h += '<button class="btn ghost" data-act="time"' + dis + '>Play in time</button>';
         h += '<button class="btn ghost" data-act="hands"' + dis + '>Hands: ' + save.hands + '</button>';
         h += '<button class="btn ghost" data-act="speed"' + dis + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
@@ -1579,9 +1661,9 @@ p{margin:0}
         if(cur < 0 || x.step > cur) return "";
         return (x.step === cur || x.t + x.b > curT) ? "now" : "done";
       };
-      h += dots(piece.lines.length, S.line + (S.lineDone ? 1 : 0));
+      h += dots(piece.lines.length, S.line + (S.lineDone && !S.spot ? 1 : 0));
       h += '<h2>' + piece.name + '</h2>';
-      h += resumeNote();
+      h += S.spot ? spotHead() : resumeNote();
       if(S.L && S.L.tip && S.line === 0 && S.pos === 0 && !S.busy && !S.lineDone) h += '<p class="muted">' + S.L.tip + '</p>';
       if(save.staff) h += grandStaff(ln, stX);
       h += '<div class="duet"><div class="duet-in" style="width:' + (ln.total * U + 4) + 'px">';
@@ -1602,7 +1684,9 @@ p{margin:0}
       h += '<p class="msg">' + (S.msg || "") + '</p>';
       h += '<div class="actions">';
       var dLast = S.line >= piece.lines.length - 1;
-      if(S.along){
+      if(S.spot){
+        h += spotButtons();
+      } else if(S.along){
         h += '<button class="btn" data-act="d-stop">Stop</button>';
         h += '<button class="btn ghost" data-act="d-next">' + (dLast ? "Finish" : "Next line") + '</button>';
       } else if(S.lineDone){
@@ -1611,6 +1695,7 @@ p{margin:0}
       } else {
         var dd = S.busy ? " disabled" : "";
         h += '<button class="btn" data-act="d-along"' + dd + '>Play along on my piano</button>';
+        h += '<button class="btn ghost" data-act="spot"' + dd + '>Fix this hard spot</button>';
         h += '<button class="btn ghost" data-act="speed"' + dd + '>Speed: ' + (save.fast ? "steady" : "slow") + '</button>';
         h += '<button class="btn ghost" data-act="staff"' + dd + '>Staff: ' + (save.staff ? "on" : "off") + '</button>';
         h += '<button class="btn ghost" data-act="auto"' + dd + '>Auto next line: ' + (save.auto ? "on" : "off") + '</button>';
@@ -1689,6 +1774,9 @@ p{margin:0}
     else if(a === "d-stop"){ ++run; S.along = false; S.busy = false; S.demoAt = -1; S.pos = 0; S.got = {}; S.lineDone = false; S.msg = ""; render(); }
     else if(a === "d-again"){ ++run; S.pos = 0; S.got = {}; S.lineDone = false; S.msg = ""; render(); }
     else if(a === "d-next") duetNext();
+    else if(a === "spot") startSpot();
+    else if(a === "spot-hear") spotRound(true);
+    else if(a === "spot-off") leaveSpot();
     else if(a === "hear") hearLine();
     else if(a === "along") playAlong();
     else if(a === "time") playInTime();
