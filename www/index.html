@@ -376,6 +376,7 @@ p{margin:0}
     s.lines = s.lines.map(line);
     s.lo = 9; s.hi = -9;
     s.lines.forEach(function(L){ L.forEach(function(x){ s.lo = Math.min(s.lo, x.n.oct); s.hi = Math.max(s.hi, x.n.oct); }); });
+    if(s.lo !== 0 || s.hi !== 0) s.five = false; // the thumb-on-C finger hints only fit songs that stay in one hand position
     SONG[s.name] = s;
   });
 
