@@ -453,7 +453,7 @@ p{margin:0}
     ["Classical", ["Ode to Joy", "Largo from the New World Symphony", "Morning Mood (theme)", "Spring from The Four Seasons (theme)", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Swan Lake (theme)", "Minuet in G (opening)", "Eine kleine Nachtmusik (opening)", "In the Hall of the Mountain King (theme)", "F\u00fcr Elise (opening)", "Prelude in C (opening)"]],
     ["Slow and dreamy", ["Largo from the New World Symphony", "Silent Night", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Carol of the Bells", "Moonlight Sonata (opening)"]],
     ["Two hands", ["Ode to Joy, two hands", "Mary Had a Little Lamb, two hands", "Twinkle Twinkle, two hands", "Minuet in G, two hands (opening)", "Moonlight Sonata (opening)"]],
-    ["Longer pieces", ["Greensleeves (whole song)", "Minuet in G (whole piece)", "Prelude in C (whole piece)", "Minuet in G, whole piece (two hands)"]]
+    ["Longer pieces", ["Greensleeves (whole song)", "Minuet in G (whole piece)", "Prelude in C (whole piece)", "Minuet in G, whole piece (two hands)", "Gymnop\u00e9die No. 1, whole piece (two hands)", "F\u00fcr Elise, main part (two hands)"]]
   ];
   var SONG = {};
   SONG_LIST.forEach(function(s){
@@ -566,6 +566,45 @@ p{margin:0}
     ["D' C' B A:.5 G:.5 F#:.5 G:.5 A", "B, A, G, D:2 R"],
     ["D:.5 E:.5 F#:.5 G:.5 A:.5 B:.5 C' B A", "D,:3 E, G, F#,"],
     ["B:.5 D':.5 G F# G:3", "G, B, D, G, D, G,"]]);
+
+  /* Whole piece with its repeat written out. Melody from the Mutopia Project edition (public domain, typeset by Evin Robertson).
+     The left hand plays the bass note and then one note of each chord. Bass notes are raised to fit the app's keys. */
+  mkDuet("Gymnop\u00e9die No. 1, whole piece (two hands)", [
+    ["R:12", "G, D:2 D, C#:2 G, D:2 D, C#:2"],
+    ["R F#' A' G' F#' C#' B C#' D' A:3", "G, D:2 D, C#:2 G, D:2 D, C#:2"],
+    ["F#:12", "G, D:2 D, C#:2 G, D:2 D, C#:2"],
+    ["R F#' A' G' F#' C#' B C#' D' A:3", "G, D:2 D, C#:2 G, D:2 D, C#:2"],
+    ["C#':3 F#':3 E:6", "F#, C#:2 B, D:2 E, B,:2 E, D:2"],
+    ["E:3 A B C' E' D' B D' C' B", "D, A,:2 A, C:2 D, B,:2 D, B,:2"],
+    ["D':5 D' E' F' G' A' C' D'", "D, A,:2 D, A,:2 D, C:2 D, C:2"],
+    ["E' D' B D':5 D' G':3", "D, B,:2 D, A,:2 D, A,:2 E, E:2"],
+    ["F#':3 B A B C#' D' E' C#' D' E'", "F#, C#:2 B, D:2 E, E:2 E, C#:2"],
+    ["F#:3 C':3 D':3 R:3", "E, B, E A,:3 D,:3 G, D:2"],
+    ["R:10 F#' A'", "D, C#:2 G, D:2 D, C#:2 G, D:2"],
+    ["G' F#' C#' B C#' D' A:3 F#:3", "D, C#:2 G, D:2 D, C#:2 G, D:2"],
+    ["F#:9 R F#' A'", "D, C#:2 G, D:2 D, C#:2 G, D:2"],
+    ["G' F#' C#' B C#' D' A:3 C#':3", "D, C#:2 G, D:2 D, C#:2 F#, C#:2"],
+    ["F#':3 E:9", "B, D:2 E, B,:2 E, D:2 D, A,:2"],
+    ["A B C' E' D' B D' C' B D':3", "A, C:2 D, B,:2 D, B,:2 D, A,:2"],
+    ["D':2 D' E' F' G' A' C' D' E' D' B", "D, A,:2 D, C:2 D, C:2 D, B,:2"],
+    ["D':5 D' G':3 F':3", "D, A,:2 D, A,:2 E, E:2 E, D:2"],
+    ["B C' F' E' D' C' E' D' C' F:3", "E, C:2 E, E:2 E, C:2 E, B, E"],
+    ["C':3 D':3", "A,:3 D,:3"]]);
+
+  /* The well-known main part, without repeats. Notes from the Mutopia Project edition (public domain, typeset by Stelios Samelis).
+     Left-hand bars that reach below the app's lowest key are moved up an octave, and one very high E is lowered an octave. */
+  mkDuet("F\u00fcr Elise, main part (two hands)", [
+    ["E':.5 D#':.5 E':.5 D#':.5 E':.5 B:.5 D':.5 C':.5 A R:.5 C:.5 E:.5 A:.5", "R:4 A,:.5 E:.5 A:.5 R:1.5"],
+    ["B R:.5 E:.5 G#:.5 B:.5 C' R:.5 E:.5 E':.5 D#':.5", "E,:.5 E:.5 G#:.5 R:1.5 A,:.5 E:.5 A:.5 R:1.5"],
+    ["E':.5 D#':.5 E':.5 B:.5 D':.5 C':.5 A R:.5 C:.5 E:.5 A:.5", "R:3 A,:.5 E:.5 A:.5 R:1.5"],
+    ["B R:.5 E:.5 C':.5 B:.5 A R:.5 B:.5 C':.5 D':.5", "E,:.5 E:.5 G#:.5 R:1.5 A,:.5 E:.5 A:.5 R:1.5"],
+    ["E':1.5 G:.5 F':.5 E':.5 D':1.5 F:.5 E':.5 D':.5", "C,:.5 G,:.5 C:.5 R:1.5 G,:.5 G:.5 B:.5 R:1.5"],
+    ["C':1.5 E:.5 D':.5 C':.5 B R:.5 E:.5 E':.5 R:.5", "A,:.5 E:.5 A:.5 R:1.5 E,:.5 E:.5 E':.5 R E':.5"],
+    ["R:.5 E':.5 E':.5 R D#':.5 E' R:.5 D#':.5 E':.5 D#':.5", "E':.5 R D#':.5 E':.5 R D#':.5 E':.5 R:1.5"],
+    ["E':.5 D#':.5 E':.5 B:.5 D':.5 C':.5 A R:.5 C:.5 E:.5 A:.5", "R:3 A,:.5 E:.5 A:.5 R:1.5"],
+    ["B R:.5 E:.5 G#:.5 B:.5 C' R:.5 E:.5 E':.5 D#':.5", "E,:.5 E:.5 G#:.5 R:1.5 A,:.5 E:.5 A:.5 R:1.5"],
+    ["E':.5 D#':.5 E':.5 B:.5 D':.5 C':.5 A R:.5 C:.5 E:.5 A:.5", "R:3 A,:.5 E:.5 A:.5 R:1.5"],
+    ["B R:.5 E:.5 C':.5 B:.5 A R:2", "E,:.5 E:.5 G#:.5 R:1.5 A,:.5 E:.5 A:.5 R:1.5"]]);
 
   function qv(s){ return s.split(" ").map(function(t){ return t + ":.5"; }).join(" "); }
   /* Written one octave higher than Beethoven's score so both hands fit the app's keys; B sharp is shown as C */
