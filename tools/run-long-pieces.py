@@ -13,7 +13,7 @@ with sync_playwright() as p:
     for vp in [{'width':390,'height':780},{'width':1194,'height':834}]:
         pg=b.new_page(viewport=vp); pg.on('pageerror', lambda e: errs.append(str(e))); pg.add_init_script(SPEED); pg.goto(URL)
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('quiet-keys')||'{}'); s.auto = false; localStorage.setItem('quiet-keys', JSON.stringify(s)); }"); pg.reload()
-        for name in ["Greensleeves (whole song)", "Prelude in C (whole piece)", "Minuet in G (whole piece)", "Minuet in G, whole piece (two hands)", "Gymnop\u00e9die No. 1, whole piece (two hands)", "F\u00fcr Elise, main part (two hands)"]:
+        for name in ["The Entertainer (main theme)", "Greensleeves (whole song)", "Prelude in C (whole piece)", "Minuet in G (whole piece)", "Minuet in G, whole piece (two hands)", "Gymnop\u00e9die No. 1, whole piece (two hands)", "F\u00fcr Elise, main part (two hands)"]:
             open_piece(pg, name)
             st=pg.evaluate("() => { const S = window.__qk.state(); return [S.view, (S.song||S.piece).lines.length, S.line]; }"); out.append((vp['width'], name, st))
             # play to line 5, leave, come back
@@ -34,7 +34,7 @@ with sync_playwright() as p:
             open_piece(pg, name); assert pg.evaluate("() => window.__qk.state().line")==0
             assert pg.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
         # both-hands mode on the melody version completes too
-        for bname in ["Minuet in G (whole piece)", "Greensleeves (whole song)", "Prelude in C (whole piece)"]:
+        for bname in ["Amazing Grace (whole song)", "The Entertainer (main theme)", "Minuet in G (whole piece)", "Greensleeves (whole song)", "Prelude in C (whole piece)"]:
             open_piece(pg, bname)
             if pg.query_selector("[data-act=top]"): pg.click("[data-act=top]")
             for k in range(3):
