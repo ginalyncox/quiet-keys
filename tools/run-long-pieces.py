@@ -1,9 +1,9 @@
 from playwright.sync_api import sync_playwright
-src=open('tools/run-all-lessons.py').read()
+src=open('test.py').read()
 SPEED=src.split('SPEED = """')[1].split('"""')[0]
 PRESS=src.split('PRESS = """')[1].split('"""')[0]
 errs=[]; out=[]
-URL='file://' + __import__('os').path.abspath('www/index.html')
+URL='file:///home/claude/build/index.html'
 def step(pg): pg.evaluate(PRESS); pg.wait_for_timeout(10)
 def open_piece(pg, name):
     pg.evaluate("() => { if(!document.querySelector('[data-act=songs]')) document.getElementById('homeBtn').click(); document.querySelector('[data-act=songs]').click(); }")
@@ -13,7 +13,7 @@ with sync_playwright() as p:
     for vp in [{'width':390,'height':780},{'width':1194,'height':834}]:
         pg=b.new_page(viewport=vp); pg.on('pageerror', lambda e: errs.append(str(e))); pg.add_init_script(SPEED); pg.goto(URL)
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('quiet-keys')||'{}'); s.auto = false; localStorage.setItem('quiet-keys', JSON.stringify(s)); }"); pg.reload()
-        for name in ["The Entertainer (main theme)", "Greensleeves (whole song)", "Prelude in C (whole piece)", "Minuet in G (whole piece)", "Minuet in G, whole piece (two hands)", "Gymnop\u00e9die No. 1, whole piece (two hands)", "F\u00fcr Elise, main part (two hands)"]:
+        for name in ["The Entertainer (main theme)", "Greensleeves (whole song)", "Prelude in C (whole piece)", "Minuet in G (whole piece)", "Minuet in G, whole piece (two hands)", "Gymnop\u00e9die No. 1, whole piece (two hands)", "F\u00fcr Elise, main part (two hands)", "Far Light (two hands)", "Moonlight Sonata, whole first movement (two hands)"]:
             open_piece(pg, name)
             st=pg.evaluate("() => { const S = window.__qk.state(); return [S.view, (S.song||S.piece).lines.length, S.line]; }"); out.append((vp['width'], name, st))
             # play to line 5, leave, come back
@@ -46,6 +46,9 @@ with sync_playwright() as p:
                 step(pg)
             assert pg.evaluate("() => window.__qk.state().view")=='done', bname
             pg.evaluate("() => document.getElementById('homeBtn').click()")
+        if vp['width']==390:
+            open_piece(pg, "Prelude in C (whole piece)"); pg.screenshot(path='long-prelude.png'); pg.evaluate("() => document.getElementById('homeBtn').click()"); open_piece(pg, 'F\u00fcr Elise, main part (two hands)'); pg.screenshot(path='long-elise.png'); pg.evaluate("() => document.getElementById('homeBtn').click()"); open_piece(pg, 'Gymnop\u00e9die No. 1, whole piece (two hands)'); pg.screenshot(path='long-gym.png'); pg.evaluate("() => document.getElementById('homeBtn').click()"); open_piece(pg, 'Moonlight Sonata, whole first movement (two hands)'); pg.screenshot(path='long-moon.png'); [step(pg) for _ in range(140)]; pg.screenshot(path='long-moon2.png'); pg.evaluate("() => document.getElementById('homeBtn').click()"); open_piece(pg, 'Far Light (two hands)'); pg.screenshot(path='long-far.png')
+            pg.evaluate("() => { document.getElementById('homeBtn').click(); document.querySelector('[data-act=songs]').click(); }"); pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)"); pg.screenshot(path='long-shelf.png', full_page=True)
         pg.close()
     b.close()
 for o in out: print(o)
