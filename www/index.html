@@ -553,7 +553,7 @@ p{margin:0}
   PATH.forEach(function(lv, i){ lv.lessons.forEach(function(L, j){ L.id = "L" + i + "-" + j; L.level = lv.name; LBY[L.id] = L; ORDER.push(L); }); });
 
   /* ================= saved choices (this device only) ================= */
-  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false, auto:true};
+  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false, auto:true, seen:{}, day:""};
   try{
     var raw = localStorage.getItem("quiet-keys");
     if(raw){
@@ -563,12 +563,54 @@ p{margin:0}
         if(HANDS.indexOf(o.hands) !== -1) save.hands = o.hands;
         save.fast = !!o.fast; save.staff = !!o.staff;
         if(o.auto === false) save.auto = false;
+        if(o.seen && typeof o.seen === "object") save.seen = o.seen;
+        if(typeof o.day === "string") save.day = o.day;
       }
     }
   }catch(e){}
   function keep(){ try{ localStorage.setItem("quiet-keys", JSON.stringify(save)); }catch(e){} }
   var TIME_FIRST = "L7-0"; // once this lesson is done, every song offers Play in time
   function nextLesson(){ for(var i = 0; i < ORDER.length; i++){ if(!save.done[ORDER[i].id]) return ORDER[i]; } return null; }
+
+  /* ================= Today: a short session picked for you ================= */
+  var today = null; // {steps:[{L} or {song} or {piece}], at}
+  function dayStr(){ var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function doneToday(){ return save.day === dayStr(); }
+  function stepName(st){ return st.L ? st.L.title : (st.song || st.piece).name; }
+  function stepKey(st){ return st.L ? st.L.id : "s:" + (st.song || st.piece).name; }
+  // Something you already know, and have not played for the longest time.
+  function pickReview(skip){
+    var best = null, bestT = Infinity;
+    function offer(st){
+      var k = stepKey(st); if(skip[k]) return;
+      var t = save.seen[k] || 0;
+      if(t < bestT){ bestT = t; best = st; }
+    }
+    Object.keys(save.songs).forEach(function(name){
+      if(SONG[name]) offer({song:SONG[name]}); else if(DUET[name]) offer({piece:DUET[name]});
+    });
+    if(!best) ORDER.forEach(function(L){ if(save.done[L.id]) offer({L:L}); });
+    return best;
+  }
+  function startToday(){
+    var steps = [], skip = {}, nx = nextLesson(), rv;
+    if(nx){ steps.push({L:nx}); skip[nx.id] = true; if(nx.song) skip["s:" + nx.song] = true; if(nx.duet) skip["s:" + nx.duet] = true; }
+    rv = pickReview(skip);
+    if(rv){ steps.push(rv); skip[stepKey(rv)] = true; }
+    if(!nx){ rv = pickReview(skip); if(rv) steps.push(rv); }
+    if(!steps.length) return;
+    today = {steps:steps, at:0};
+    runStep();
+  }
+  function runStep(){
+    var st = today && today.steps[today.at]; if(!st) return;
+    if(st.L) startLesson(st.L); else if(st.song) startSong(st.song, null); else startDuet(st.piece, null);
+  }
+  function todayDots(){
+    var h = '<div class="dots" aria-hidden="true">';
+    for(var i = 0; i < S.dots; i++) h += '<span class="dot' + (i < S.dotsFull ? ' full' : (i === S.dotsFull ? ' here' : '')) + '"></span>';
+    return h + '</div>';
+  }
 
   /* ================= sound ================= */
   var ctx = null;
@@ -1045,8 +1087,17 @@ p{margin:0}
     var L = S.L, song = S.song || S.piece || null;
     if(L){ save.done[L.id] = true; }
     if(song && !song.scale) save.songs[song.name] = true;
-    keep();
+    var now = Date.now();
+    if(L) save.seen[L.id] = now;
+    if(song && !song.scale) save.seen["s:" + song.name] = now;
     S = {view:"done", L:L, song:song};
+    if(today){
+      today.at++;
+      S.dots = today.steps.length; S.dotsFull = today.at;
+      if(today.at >= today.steps.length){ S.session = "end"; save.day = dayStr(); today = null; }
+      else { S.session = "mid"; S.nextName = stepName(today.steps[today.at]); }
+    }
+    keep();
     render();
   }
   function press(ev){
@@ -1170,7 +1221,8 @@ p{margin:0}
       h += '<h1>Ready when you are.</h1>';
       h += '<p class="muted">A few minutes is plenty. Stop whenever you like.</p>';
       h += '<div class="slabs">';
-      if(nx) h += '<button class="slab" data-act="lesson" data-id="' + nx.id + '" style="--tab:var(--note-C)"><b>Next lesson</b><span>' + nx.title + '</span></button>';
+      var fresh = !Object.keys(save.done).length;
+      h += '<button class="slab" data-act="today" style="--tab:var(--note-C)"><b>' + (doneToday() ? "A little more" : "Today") + '</b><span>' + (doneToday() ? "Today is done. This is extra, only if you feel like it." : (fresh ? "Start here. It picks the lesson for you." : (nx ? "Something new, then something you know. It stops by itself." : "Two things you know. It stops by itself."))) + '</span></button>';
       h += '<button class="slab" data-act="lessons" style="--tab:var(--note-G)"><b>All lessons</b><span>Pick any lesson from any level.</span></button>';
       h += '<button class="slab" data-act="songs" style="--tab:var(--note-A)"><b>Song book</b><span>Follow the glowing key. Nothing to memorize.</span></button>';
       h += '</div>';
@@ -1350,6 +1402,20 @@ p{margin:0}
     else if(S.view === "done"){
       free = true;
       var nx2 = nextLesson();
+      if(S.session === "mid"){
+        h += '<h1>That part is done.</h1>';
+        h += todayDots();
+        h += '<p>Next is something you already know: ' + S.nextName + '.</p>';
+        h += '<div class="actions"><button class="btn" data-act="today-next">Keep going</button><button class="btn ghost" data-act="home">Stop here</button></div>';
+        h += '<p class="muted">Stopping now is fine. It still counts.</p>';
+      }
+      else if(S.session === "end"){
+        h += '<h1>That is today done.</h1>';
+        h += todayDots();
+        h += '<p>Short and done counts. You can close the app now.</p>';
+        h += '<div class="actions"><button class="btn" data-act="home">Stop here</button><button class="btn ghost" data-act="today">A little more</button></div>';
+      }
+      else {
       h += '<h1>That is a full practice.</h1>';
       h += '<p>' + (S.song ? "You played " + S.song.name + " all the way through." : "Short and done counts.") + '</p>';
       h += '<div class="actions">';
@@ -1358,6 +1424,7 @@ p{margin:0}
       h += '<button class="btn ghost" data-act="again">Go again</button>';
       h += '</div>';
       if(S.L && nx2) h += '<p class="muted">Next up: ' + nx2.title + '</p>';
+      }
     }
 
     stage.innerHTML = h;
@@ -1382,7 +1449,10 @@ p{margin:0}
     var b = e.target.closest("[data-act]"); if(!b || b.disabled) return;
     audio(); // unlock sound on the first tap
     var a = b.dataset.act;
+    if(a === "home" || a === "lessons" || a === "songs" || a === "lesson" || a === "song" || a === "duet-open") today = null; // leaving a Today session is always allowed
     if(a === "home"){ ++run; S = {view:"home"}; render(); }
+    else if(a === "today") startToday();
+    else if(a === "today-next") runStep();
     else if(a === "lessons"){ ++run; S = {view:"lessons"}; render(); }
     else if(a === "songs"){ ++run; S = {view:"songs"}; render(); }
     else if(a === "lesson") startLesson(LBY[b.dataset.id]);
@@ -1413,7 +1483,7 @@ p{margin:0}
     else if(a === "auto"){ save.auto = !save.auto; keep(); render(); }
   });
 
-  window.__qk = {state:function(){ return S; }}; // used by the automated lesson check
+  window.__qk = {state:function(){ return S; }, today:function(){ return today; }}; // used by the automated lesson check
   render();
 })();
 </script>
