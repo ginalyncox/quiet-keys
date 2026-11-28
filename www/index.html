@@ -377,7 +377,25 @@ p{margin:0}
       "D':3@G B:3@Em", "B@Em A@Am C' B A G:2@G", "A@Am B G@Em E G A@D F# E D E:2@Em"]},
     {name:"Jolly Old Saint Nicholas", lines:[
       "E'@C E' E' E' D'@G D' D':2", "C'@Am C' C' C' E':4@C", "A@F A A A G@C G C':2", "D'@G C' D' E' D':4",
-      "E'@C E' E' E' D'@G D' D':2", "C'@Am C' C' C' E':4@C", "A@F A A A G@C G C':2", "D'@G C' D' E' C':4@C"]}
+      "E'@C E' E' E' D'@G D' D':2", "C'@Am C' C' C' E':4@C", "A@F A A A G@C G C':2", "D'@G C' D' E' C':4@C"]},
+    /* Whole piece, both halves. Notes from the Mutopia Project edition (public domain, typeset by Allen Garvin). Chords are our own. */
+    {name:"Minuet in G (whole piece)", lines:[
+      "D'@G G:.5 A:.5 B:.5 C':.5 D' G G",
+      "E'@C C':.5 D':.5 E':.5 F#':.5 G'@G G G",
+      "C'@Am D':.5 C':.5 B:.5 A:.5 B@G C':.5 B:.5 A:.5 G:.5",
+      "F#@D G:.5 A:.5 B:.5 G:.5 A:3",
+      "D'@G G:.5 A:.5 B:.5 C':.5 D' G G",
+      "E'@C C':.5 D':.5 E':.5 F#':.5 G'@G G G",
+      "C'@Am D':.5 C':.5 B:.5 A:.5 B@G C':.5 B:.5 A:.5 G:.5",
+      "A@D B:.5 A:.5 G:.5 F#:.5 G:3@G",
+      "B'@G G':.5 A':.5 B':.5 G':.5 A'@D D':.5 E':.5 F#':.5 D':.5",
+      "G'@Em E':.5 F#':.5 G':.5 D':.5 C#'@A B:.5 C#':.5 A",
+      "A:.5@A B:.5 C#':.5 D':.5 E':.5 F#':.5 G'@Em F#' E'@A",
+      "F#'@D A C#' D':3",
+      "D'@G G:.5 F#:.5 G E'@C G:.5 F#:.5 G",
+      "D'@G C' B A:.5@D G:.5 F#:.5 G:.5 A",
+      "D:.5@D E:.5 F#:.5 G:.5 A:.5 B:.5 C'@Em B A@D",
+      "B:.5@G D':.5 G F#@D G:3@G"]}
   ];
   /* Song book shelves, each from easier to harder */
   var SHELVES = [
@@ -386,7 +404,8 @@ p{margin:0}
     ["Holiday", ["Jingle Bells", "Jolly Old Saint Nicholas", "We Wish You a Merry Christmas", "Joy to the World", "The First Noel", "Silent Night", "Carol of the Bells", "O Come, O Come, Emmanuel"]],
     ["Classical", ["Ode to Joy", "Largo from the New World Symphony", "Morning Mood (theme)", "Spring from The Four Seasons (theme)", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Swan Lake (theme)", "Minuet in G (opening)", "Eine kleine Nachtmusik (opening)", "In the Hall of the Mountain King (theme)", "F\u00fcr Elise (opening)", "Prelude in C (opening)"]],
     ["Slow and dreamy", ["Largo from the New World Symphony", "Silent Night", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Carol of the Bells", "Moonlight Sonata (opening)"]],
-    ["Two hands", ["Ode to Joy, two hands", "Mary Had a Little Lamb, two hands", "Twinkle Twinkle, two hands", "Minuet in G, two hands (opening)", "Moonlight Sonata (opening)"]]
+    ["Two hands", ["Ode to Joy, two hands", "Mary Had a Little Lamb, two hands", "Twinkle Twinkle, two hands", "Minuet in G, two hands (opening)", "Moonlight Sonata (opening)"]],
+    ["Longer pieces", ["Minuet in G (whole piece)", "Minuet in G, whole piece (two hands)"]]
   ];
   var SONG = {};
   SONG_LIST.forEach(function(s){
@@ -480,6 +499,26 @@ p{margin:0}
     ["C' D':.5 C':.5 B:.5 A:.5 B C':.5 B:.5 A:.5 G:.5", "A,:3 G,:3"],
     ["F# G:.5 A:.5 B:.5 G:.5 A:3", "D B, G, D:3"]]);
 
+  /* Whole piece. Notes from the Mutopia Project edition (public domain, typeset by Allen Garvin).
+     The left hand plays the lowest written voice. Four low notes are raised an octave to fit the app's keys. */
+  mkDuet("Minuet in G, whole piece (two hands)", [
+    ["D' G:.5 A:.5 B:.5 C':.5 D' G G", "G,:2 A, B,:3"],
+    ["E' C':.5 D':.5 E':.5 F#':.5 G' G G", "C:3 B,:3"],
+    ["C' D':.5 C':.5 B:.5 A:.5 B C':.5 B:.5 A:.5 G:.5", "A,:3 G,:3"],
+    ["F# G:.5 A:.5 B:.5 G:.5 A:3", "D B, G, D D,:.5 C:.5 B,:.5 A,:.5"],
+    ["D' G:.5 A:.5 B:.5 C':.5 D' G G", "B,:2 A, G, B, G,"],
+    ["E' C':.5 D':.5 E':.5 F#':.5 G' G G", "C:3 B, C:.5 B,:.5 A,:.5 G,:.5"],
+    ["C' D':.5 C':.5 B:.5 A:.5 B C':.5 B:.5 A:.5 G:.5", "A,:2 F#, G,:2 B,"],
+    ["A B:.5 A:.5 G:.5 F#:.5 G:3", "C D D, G,:2 G,"],
+    ["B' G':.5 A':.5 B':.5 G':.5 A' D':.5 E':.5 F#':.5 D':.5", "G,:3 F#,:3"],
+    ["G' E':.5 F#':.5 G':.5 D':.5 C#' B:.5 C#':.5 A", "E, G, E, A,:2 A,"],
+    ["A:.5 B:.5 C#':.5 D':.5 E':.5 F#':.5 G' F#' E'", "A,:3 B, D C#"],
+    ["F#' A C#' D':3", "D F#, A, D D, C"],
+    ["D' G:.5 F#:.5 G E' G:.5 F#:.5 G", "B,:2 B, C:2 C"],
+    ["D' C' B A:.5 G:.5 F#:.5 G:.5 A", "B, A, G, D:2 R"],
+    ["D:.5 E:.5 F#:.5 G:.5 A:.5 B:.5 C' B A", "D,:3 E, G, F#,"],
+    ["B:.5 D':.5 G F# G:3", "G, B, D, G, D, G,"]]);
+
   function qv(s){ return s.split(" ").map(function(t){ return t + ":.5"; }).join(" "); }
   /* Written one octave higher than Beethoven's score so both hands fit the app's keys; B sharp is shown as C */
   mkDuet("Moonlight Sonata (opening)", [
@@ -553,7 +592,7 @@ p{margin:0}
   PATH.forEach(function(lv, i){ lv.lessons.forEach(function(L, j){ L.id = "L" + i + "-" + j; L.level = lv.name; LBY[L.id] = L; ORDER.push(L); }); });
 
   /* ================= saved choices (this device only) ================= */
-  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false, auto:true, seen:{}, day:""};
+  var save = {done:{}, songs:{}, hands:"right", fast:false, staff:false, auto:true, seen:{}, day:"", at:{}};
   try{
     var raw = localStorage.getItem("quiet-keys");
     if(raw){
@@ -565,6 +604,7 @@ p{margin:0}
         if(o.auto === false) save.auto = false;
         if(o.seen && typeof o.seen === "object") save.seen = o.seen;
         if(typeof o.day === "string") save.day = o.day;
+        if(o.at && typeof o.at === "object") save.at = o.at;
       }
     }
   }catch(e){}
@@ -912,10 +952,28 @@ p{margin:0}
   }
 
   /* ---- songs and scales ---- */
+  /* Longer pieces remember the line you stopped on (Song book only, not lessons). */
+  var LONG = 6, fromTop = false;
+  function resumeAt(piece, L){
+    var top = fromTop; fromTop = false;
+    if(L || top || piece.lines.length < LONG) return 0;
+    var at = save.at[piece.name] || 0;
+    return (at > 0 && at < piece.lines.length) ? at : 0;
+  }
+  function markLine(){
+    var piece = S.song || S.piece;
+    if(S.L || !piece || piece.lines.length < LONG) return;
+    save.at[piece.name] = S.line; keep();
+  }
+  function resumeNote(){
+    if(!S.resumed || S.line !== S.resumed || S.pos !== 0 || S.busy || S.lineDone) return "";
+    return '<p class="muted">Picking up where you stopped.</p><div class="actions"><button class="btn ghost" data-act="top">Start from the top</button></div>';
+  }
   function startSong(song, L){
     ++run;
     if(song.scale && save.hands === "both"){ save.hands = "right"; keep(); }
-    S = {view:"song", L:L || null, song:song, line:0, pos:0, lineDone:false, msg:"", busy:false, demoAt:-1, along:false, chordNow:null, timing:false, counting:false, marks:null};
+    var from = resumeAt(song, L);
+    S = {view:"song", L:L || null, song:song, line:from, resumed:from, pos:0, lineDone:false, msg:"", busy:false, demoAt:-1, along:false, chordNow:null, timing:false, counting:false, marks:null};
     render();
   }
   function curLine(){ return S.song.lines[S.line]; }
@@ -940,7 +998,7 @@ p{margin:0}
   function nextLine(){
     ++run;
     if(S.line >= S.song.lines.length - 1){ finish(); return; }
-    S.line++; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; S.chordNow = null; render();
+    S.line++; S.pos = 0; S.lineDone = false; S.marks = null; S.msg = ""; S.chordNow = null; markLine(); render();
     if(S.along) playAlong();
   }
   function hearLine(){
@@ -1031,7 +1089,8 @@ p{margin:0}
   /* ---- two hands, each with its own line ---- */
   function startDuet(piece, L){
     ++run;
-    S = {view:"duet", L:L || null, piece:piece, line:0, pos:0, got:{}, lineDone:false, msg:"", busy:false, demoAt:-1, along:false};
+    var from = resumeAt(piece, L);
+    S = {view:"duet", L:L || null, piece:piece, line:from, resumed:from, pos:0, got:{}, lineDone:false, msg:"", busy:false, demoAt:-1, along:false};
     render();
   }
   function dLine(){ return S.piece.lines[S.line]; }
@@ -1057,7 +1116,7 @@ p{margin:0}
     var wasAlong = S.along;
     ++run;
     if(S.line >= S.piece.lines.length - 1){ finish(); return; }
-    S.line++; S.pos = 0; S.got = {}; S.lineDone = false; S.busy = false; S.along = false; S.demoAt = -1; S.msg = ""; render();
+    S.line++; S.pos = 0; S.got = {}; S.lineDone = false; S.busy = false; S.along = false; S.demoAt = -1; S.msg = ""; markLine(); render();
     if(wasAlong) duetDemo(true);
   }
   async function duetDemo(loop){
@@ -1087,6 +1146,7 @@ p{margin:0}
     var L = S.L, song = S.song || S.piece || null;
     if(L){ save.done[L.id] = true; }
     if(song && !song.scale) save.songs[song.name] = true;
+    if(song && !L) delete save.at[song.name];
     var now = Date.now();
     if(L) save.seen[L.id] = now;
     if(song && !song.scale) save.seen["s:" + song.name] = now;
@@ -1303,6 +1363,7 @@ p{margin:0}
       var L = curLine(), song = S.song, both = isBoth(), shift = songShift(), wideRange = song.hi > song.lo || song.lo + shift !== 0;
       h += dots(song.lines.length, S.line + (S.lineDone ? 1 : 0));
       h += '<h2>' + song.name + '</h2>';
+      h += resumeNote();
       var live = S.busy || S.timing;
       var states = L.map(function(x, i){
         if(S.marks && S.lineDone) return S.marks[i] === "on" ? "done" : "off";
@@ -1362,6 +1423,7 @@ p{margin:0}
       };
       h += dots(piece.lines.length, S.line + (S.lineDone ? 1 : 0));
       h += '<h2>' + piece.name + '</h2>';
+      h += resumeNote();
       if(S.L && S.L.tip && S.line === 0 && S.pos === 0 && !S.busy && !S.lineDone) h += '<p class="muted">' + S.L.tip + '</p>';
       if(save.staff) h += grandStaff(ln, stX);
       h += '<div class="duet"><div class="duet-in" style="width:' + (ln.total * U + 4) + 'px">';
@@ -1452,6 +1514,7 @@ p{margin:0}
     if(a === "home" || a === "lessons" || a === "songs" || a === "lesson" || a === "song" || a === "duet-open") today = null; // leaving a Today session is always allowed
     if(a === "home"){ ++run; S = {view:"home"}; render(); }
     else if(a === "today") startToday();
+    else if(a === "top"){ fromTop = true; if(S.piece) startDuet(S.piece, null); else startSong(S.song, null); }
     else if(a === "today-next") runStep();
     else if(a === "lessons"){ ++run; S = {view:"lessons"}; render(); }
     else if(a === "songs"){ ++run; S = {view:"songs"}; render(); }
