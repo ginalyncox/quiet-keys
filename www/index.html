@@ -362,14 +362,31 @@ p{margin:0}
       "G:1.5@G D:.5 G:1.5 D:.5 G:.5 D:.5 G:.5 B:.5 D':2", "C':1.5@D7 A:.5 C':1.5 A:.5 C':.5 A:.5 F#:.5 A:.5 D:2"]},
     {name:"In the Hall of the Mountain King (theme)", lines:[
       "A:.5@Am B:.5 C':.5 D':.5 E':.5 C':.5 E' D#':.5 B:.5 D#' D':.5 Bb:.5 D'",
-      "A:.5@Am B:.5 C':.5 D':.5 E':.5 C':.5 E':.5 A':.5 G':.5 E':.5 C':.5 E':.5 G':2"]}
+      "A:.5@Am B:.5 C':.5 D':.5 E':.5 C':.5 E':.5 A':.5 G':.5 E':.5 C':.5 E':.5 G':2"]},
+    {name:"Gymnop\u00e9die No. 1 (theme)", lines:[
+      "F#'@G A' G'@D F#' C#'", "B@G C#' D' A:3@D", "F#:6@G"]},
+    {name:"Swan Lake (theme)", lines:[
+      "E':2@Am A:.5 B:.5 C':.5 D':.5 E':1.5 C':.5 E':1.5 C':.5", "E':1.5@Am A:.5 C':.5@F A:.5 F:.5 C':.5 A:4@Am"]},
+    {name:"Carol of the Bells", lines:[
+      "C'@Am B:.5 C':.5 A C' B:.5 C':.5 A", "C'@Am B:.5 C':.5 A C' B:.5 C':.5 A",
+      "E'@Am D':.5 E':.5 C' E' D':.5 E':.5 C'", "E'@Am D':.5 E':.5 C' E' D':.5 E':.5 C'",
+      "A'@Am A':.5 A':.5 G':.5 F':.5 E' E':.5 E':.5 D':.5 C':.5", "D'@Dm D':.5 D':.5 E':.5 D':.5 A@Am A:.5 A:.5 A",
+      "C'@Am B:.5 C':.5 A C' B:.5 C':.5 A:2"]},
+    {name:"O Come, O Come, Emmanuel", lines:[
+      "E@Em G B B B A@Am C' B A G:2@G", "A@Am B G@Em E G A@D F# E D E:2@Em",
+      "D':3@G B:3@Em", "B@Em A@Am C' B A G:2@G", "A@Am B G@Em E G A@D F# E D E:2@Em"]},
+    {name:"Jolly Old Saint Nicholas", lines:[
+      "E'@C E' E' E' D'@G D' D':2", "C'@Am C' C' C' E':4@C", "A@F A A A G@C G C':2", "D'@G C' D' E' D':4",
+      "E'@C E' E' E' D'@G D' D':2", "C'@Am C' C' C' E':4@C", "A@F A A A G@C G C':2", "D'@G C' D' E' C':4@C"]}
   ];
   /* Song book shelves, each from easier to harder */
   var SHELVES = [
     ["First tunes", ["Hot Cross Buns", "Mary Had a Little Lamb", "Twinkle Twinkle Little Star", "London Bridge", "Row, Row, Row Your Boat", "Fr\u00e8re Jacques", "Old MacDonald Had a Farm", "Skip to My Lou"]],
     ["Folk songs", ["Oh! Susanna", "Camptown Races", "When the Saints Go Marching In", "Yankee Doodle", "Happy Birthday", "Clementine", "Amazing Grace", "Auld Lang Syne", "Aura Lee", "Greensleeves"]],
-    ["Holiday", ["Jingle Bells", "We Wish You a Merry Christmas", "Joy to the World", "The First Noel", "Silent Night"]],
-    ["Classical", ["Ode to Joy", "Largo from the New World Symphony", "Morning Mood (theme)", "Spring from The Four Seasons (theme)", "Canon in D (theme)", "Minuet in G (opening)", "Eine kleine Nachtmusik (opening)", "In the Hall of the Mountain King (theme)", "F\u00fcr Elise (opening)", "Prelude in C (opening)"]]
+    ["Holiday", ["Jingle Bells", "Jolly Old Saint Nicholas", "We Wish You a Merry Christmas", "Joy to the World", "The First Noel", "Silent Night", "Carol of the Bells", "O Come, O Come, Emmanuel"]],
+    ["Classical", ["Ode to Joy", "Largo from the New World Symphony", "Morning Mood (theme)", "Spring from The Four Seasons (theme)", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Swan Lake (theme)", "Minuet in G (opening)", "Eine kleine Nachtmusik (opening)", "In the Hall of the Mountain King (theme)", "F\u00fcr Elise (opening)", "Prelude in C (opening)"]],
+    ["Slow and dreamy", ["Largo from the New World Symphony", "Silent Night", "Canon in D (theme)", "Gymnop\u00e9die No. 1 (theme)", "Carol of the Bells", "Moonlight Sonata (opening)"]],
+    ["Two hands", ["Ode to Joy, two hands", "Mary Had a Little Lamb, two hands", "Twinkle Twinkle, two hands", "Minuet in G, two hands (opening)", "Moonlight Sonata (opening)"]]
   ];
   var SONG = {};
   SONG_LIST.forEach(function(s){
@@ -462,6 +479,15 @@ p{margin:0}
     ["E' C':.5 D':.5 E':.5 F#':.5 G' G G", "C:3 B,:3"],
     ["C' D':.5 C':.5 B:.5 A:.5 B C':.5 B:.5 A:.5 G:.5", "A,:3 G,:3"],
     ["F# G:.5 A:.5 B:.5 G:.5 A:3", "D B, G, D:3"]]);
+
+  function qv(s){ return s.split(" ").map(function(t){ return t + ":.5"; }).join(" "); }
+  /* Written one octave higher than Beethoven's score so both hands fit the app's keys; B sharp is shown as C */
+  mkDuet("Moonlight Sonata (opening)", [
+    [qv("G# C#' E' G# C#' E' G# C#' E' G# C#' E'"), "C#:6"],
+    [qv("G# C#' E' G# C#' E' G# C#' E' G# C#' E'"), "B,:6"],
+    [qv("A C#' E' A C#' E' A D' F#' A D' F#'"), "A,:3 F#,:3"],
+    [qv("G# C' F#' G# C#' E' G# C#' D#' F# C' D#'"), "G#,:6"],
+    [qv("G# C#' E' G# C#' E'") + " C#':3", "C#:6"]]);
 
   /* ================= the lesson path ================= */
   function sg(name, extra){ var o = {t:"song", song:name, title:name}; if(extra) Object.keys(extra).forEach(function(k){ o[k] = extra[k]; }); return o; }
@@ -1173,8 +1199,9 @@ p{margin:0}
       SHELVES.forEach(function(sh){
         h += '<div class="lvl"><h2>' + sh[0] + '</h2><div class="rows">';
         sh[1].forEach(function(name){
-          var s = SONG[name];
-          h += '<button class="rowbtn" data-act="song" data-i="' + SONG_LIST.indexOf(s) + '"><span>' + s.name + '</span>' + (save.songs[s.name] ? '<span class="done-mark">played</span>' : '') + '</button>';
+          var s = SONG[name], mark = save.songs[name] ? '<span class="done-mark">played</span>' : '';
+          if(s) h += '<button class="rowbtn" data-act="song" data-i="' + SONG_LIST.indexOf(s) + '"><span>' + name + '</span>' + mark + '</button>';
+          else h += '<button class="rowbtn" data-act="duet-open" data-name="' + name + '"><span>' + name + '</span>' + mark + '</button>';
         });
         h += '</div></div>';
       });
@@ -1360,7 +1387,8 @@ p{margin:0}
     else if(a === "songs"){ ++run; S = {view:"songs"}; render(); }
     else if(a === "lesson") startLesson(LBY[b.dataset.id]);
     else if(a === "song") startSong(SONG_LIST[parseInt(b.dataset.i, 10)], null);
-    else if(a === "again"){ if(S.L) startLesson(S.L); else if(S.song) startSong(S.song, null); }
+    else if(a === "duet-open") startDuet(DUET[b.dataset.name], null);
+    else if(a === "again"){ if(S.L) startLesson(S.L); else if(S.song){ if(S.song.duet) startDuet(S.song, null); else startSong(S.song, null); } }
     else if(a === "echo-again") showEcho();
     else if(a === "midi") connectMidi();
     else if(a === "win-down"){ winManual = Math.max(-1, winStart - 1); render(); }
